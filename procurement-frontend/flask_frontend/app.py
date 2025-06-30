@@ -1,11 +1,12 @@
 ﻿from flask import Flask, render_template, request, redirect, url_for, flash
 import requests
+import os
 
-app = Flask(__name__, template_folder="templates")
-app.secret_key = "0103050709"
 
-BASE_API_URL = "http://127.0.0.1:8001"
+app = Flask(__name__, template_folder="templates", static_folder="static")
+app.secret_key = os.getenv("FLASK_SECRET", "local-dev-secret")
 
+BASE_API_URL = os.getenv("API_URL", "http://127.0.0.1:8001")
 # -------------------------------
 # Home / Index: Basic article list
 # -------------------------------
@@ -350,4 +351,5 @@ def add_supplier():
     return render_template("add_supplier.html")
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    port = int(os.getenv("PORT", 5000))      # ← Render injects $PORT
+    app.run(host="0.0.0.0", port=port, debug=True)
