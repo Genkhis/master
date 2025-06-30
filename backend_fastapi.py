@@ -15,10 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import Header, Depends
-from backup_utils import (
-    create_backup, list_backups, restore_backup,
-    ADMIN_TOKEN
-)
+
 
 if Path(".env").exists():
     from dotenv import load_dotenv
