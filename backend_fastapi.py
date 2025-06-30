@@ -44,36 +44,8 @@ def get_db():
 
 
 
-def verify_admin(x_token: str = Header(...)):
-    if x_token != ADMIN_TOKEN:
-        raise HTTPException(401, "invalid admin token")
 
 
-# ─── scheduler: start once at startup ────────────────────────────
-@app.on_event("startup")
-def _setup_scheduler():
-    sched = AsyncIOScheduler(timezone="Europe/Berlin")
-    # every Sunday 03:00
-    sched.add_job(create_backup, trigger="cron", day_of_week="sun",
-                  hour=3, minute=0, id="weekly_pg_backup")
-    sched.start()
-
-
-# ─── backup endpoints (simple JSON) ──────────────────────────────
-@app.get("/backup/list", tags=["Backup"], dependencies=[Depends(verify_admin)])
-def backup_list():
-    return {"backups": list_backups()}
-
-@app.get("/backup/now", tags=["Backup"], dependencies=[Depends(verify_admin)])
-def backup_now():
-    stamp = create_backup()
-    return {"message": "backup created", "stamp": stamp}
-
-@app.post("/backup/restore/{stamp}", tags=["Backup"],
-          dependencies=[Depends(verify_admin)])
-def backup_restore(stamp: str):
-    restore_backup(stamp)
-    return {"message": f"restored to {stamp}"}
 
 
 
