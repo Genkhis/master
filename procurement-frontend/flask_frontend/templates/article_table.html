@@ -1,0 +1,90 @@
+<table class="table table-hover table-striped align-middle mb-0">
+    <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Article&nbsp;name</th>
+            <th>Cost&nbsp;type</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Dimension</th>
+            <th>External&nbsp;No.</th>
+            <th>Sales&nbsp;unit</th>
+            <th>Units&nbsp;per&nbsp;SU</th>
+            <th>Cert.</th>
+            <th>SU&nbsp;price<br>(Min/Max/Avg&nbsp;€)</th>
+            <th>Unit&nbsp;price<br>(Min/Max/Avg&nbsp;€/pc)</th>
+            <th>Supplier</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for art in articles %}
+        <tr>
+            <td>{{ art.article_id }}</td>
+            <td>{{ art.article_name }}</td>
+
+            <td>
+                <a href="{{ url_for('all_articles',
+                                    query=art.cost_type,
+                                    filter_by='cost_type') }}">
+                    {{ art.cost_type }}
+                </a>
+            </td>
+
+            <td>
+                <a href="{{ url_for('all_articles',
+                                    query=art.category,
+                                    filter_by='category') }}">
+                    {{ art.category }}
+                </a>
+            </td>
+
+            <td>{{ art.description }}</td>
+            <td>{{ art.dimension or "–" }}</td>
+
+            <td>
+                <a href="{{ url_for('price_history',
+                                    supplier_number=art.supplier_number,
+                                    item_no_ext=art.item_no_ext) }}">
+                    {{ art.item_no_ext }}
+                </a>
+            </td>
+
+            <td>{{ art.sale_unit or "–" }}</td>
+            <td>{{ art.units_per_sale_unit or "–" }}</td>
+
+            <!-- Certification drop-down --------------------------------- -->
+            <td style="min-width:7rem">
+                <select class="form-select form-select-sm cert-select"
+                        data-article-id="{{ art.article_id }}">
+                    {% for choice in ['-','LEED','EUTax','DGNB'] %}
+                    <option value="{{ choice }}"
+                            {% if art.certification==choice %}selected{% endif %}>
+                        {{ choice }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </td>
+
+            <td>
+                {{ '%.2f'|format(art.low_sale_price  or 0) }} /
+                {{ '%.2f'|format(art.high_sale_price or 0) }} /
+                {{ '%.2f'|format(art.avg_sale_price  or 0) }}
+            </td>
+
+            <td>
+                {{ '%.4f'|format(art.low_unit_price  or 0) }} /
+                {{ '%.4f'|format(art.high_unit_price or 0) }} /
+                {{ '%.4f'|format(art.avg_unit_price  or 0) }}
+            </td>
+
+            <td>
+                <a href="{{ url_for('supplier_articles',
+                                    supplier_number=art.supplier_number) }}">
+                    {{ art.supplier_number }} – {{ art.supplier_name or "–" }}
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Article</title>
+</head>
+<body class="container mt-4">
+    <!-- Common header with Home and Suppliers buttons -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Edit Article</h1>
+        <div>
+            <a href="{{ url_for('index') }}" class="btn btn-primary">Home</a>
+            <a href="{{ url_for('suppliers') }}" class="btn btn-info">Suppliers</a>
+        </div>
+    </div>
+    <form method="POST">
+        <input type="text" name="article_number" value="{{ article.article_number }}" required>
+        <input type="text" name="article_name" value="{{ article.article_name }}" required>
+        <textarea name="description">{{ article.description }}</textarea>
+        <input type="text" name="cost_type" value="{{ article.cost_type }}">
+        <input type="text" name="category" value="{{ article.category }}">
+        <!-- New Supplier Field -->
+        <input type="number" name="supplier_number" placeholder="Supplier Number" value="{{ article.supplier_number }}">
+        <button type="submit">Update</button>
+    </form>
+    <a href="{{ url_for('index') }}">Back</a>
+</body>
+</html>

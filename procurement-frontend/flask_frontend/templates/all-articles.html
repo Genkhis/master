@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alle Artikel</title>
+
+    <!-- Bootstrap & jQuery-UI -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        .table {
+            font-size: .875rem;
+        }
+
+        .page-header .btn {
+            margin-left: .5rem;
+        }
+
+        .remove-row {
+            cursor: pointer;
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-4 gap-3 page-header">
+        <h1 class="m-0">Artikelsuche</h1>
+        <div class="btn-group">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">Startseite</a>
+            <a href="{{ url_for('suppliers') }}" class="btn btn-info">Lieferanten</a>
+        </div>
+    </div>
+
+    <!-- Search form -->
+    <form id="search-form" class="mb-4" method="POST">
+        {%- set queries = request.form.getlist('query[]') or [''] %}
+        {%- set fields  = request.form.getlist('filter_by[]') or ['article_name'] %}
+
+        <div id="filter-container">
+            {%- for i in range(queries|length) %}
+            <div class="row g-2 align-items-center search-row">
+                <!-- text input -->
+                <div class="col-12 col-md-6">
+                    <input name="query[]" class="form-control query-input"
+                           placeholder="Begriff eingeben"
+                           value="{{ queries[i] }}">
+                </div>
+                <!-- field select -->
+                <div class="col-8 col-md-3">
+                    <select name="filter_by[]" class="form-select field-select">
+                        {% for fld,label in [
+                        ('article_name','Artikelname'),
+                        ('description','Beschreibung'),
+                        ('item_no_ext','Externe Art.-Nr.'),
+                        ('cost_type','Kostenart'),
+                        ('category','Kategorie'),
+                        ('supplier_number','Lieferanten-Nr.'),
+                        ('supplier_name','Lieferantenname'),
+                        ('certification','Zertifizierung')
+                        ] %}
+                        <option value="{{ fld }}" {% if fld==fields[i] %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <!-- remove button -->
+                <div class="col-2 col-md-1 d-flex align-items-center">
+                    <span class="remove-row ms-1 {% if i==0 %}d-none{% endif %}">&times;</span>
+                </div>
+            </div>
+            {%- endfor %}
+        </div>
+
+        <!-- form buttons -->
+        <div class="row g-2 mt-2">
+            <div class="col-auto">
+                <button type="button" id="add-row" class="btn btn-outline-secondary">+</button>
+            </div>
+            <div class="col-auto"><button class="btn btn-primary">Suchen</button></div>
+            <div class="col-auto">
+                <a href="{{ url_for('all_articles') }}" class="btn btn-outline-secondary">Reset</a>
+            </div>
+           
+        </div>
+    </form>
+
+    <!-- Article table -->
+    <div class="table-wrapper shadow-sm rounded-2 bg-white p-3">
+        {% include 'article_table.html' %}
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(function () {
+            const BASE_API_URL = "http://127.0.0.1:8001";
+
+            // Autocomplete
+            function attachAutocomplete($el) {
+                $el.autocomplete({
+                    source(request, response) {
+                        $.getJSON(`${BASE_API_URL}/article_suggestions`, { q: $.trim(request.term) })
+                            .done(response).fail(() => response([]));
+                    },
+                    minLength: 3,
+                    select(e, ui) {
+                        $(this).val($.trim(ui.item.value));
+                        return false;
+                    }
+                });
+            }
+            attachAutocomplete($('.query-input'));
+
+            // Add row
+            $('#add-row').on('click', () => {
+                const $clone = $('.search-row').first().clone(true);
+                $clone.find('input').val('');
+                $clone.find('.remove-row').removeClass('d-none');
+                $('#filter-container').append($clone);
+                attachAutocomplete($clone.find('.query-input'));
+            });
+
+            // Remove row
+            $(document).on('click', '.remove-row', function () {
+                $(this).closest('.search-row').remove();
+            });
+
+            // Trim on submit
+            $('#search-form').on('submit', function () {
+                $(this).find('.query-input').each(function () {
+                    this.value = $.trim(this.value);
+                });
+            });
+
+            // Certification save (unchanged)
+            $(document).on('change', '.cert-select', function () {
+                const artId = $(this).data('articleId'), newVal = $(this).val();
+                if (!artId) { alert('Keine gültige Artikel-ID gefunden.'); return; }
+                $.ajax({
+                    url: `${BASE_API_URL}/update_article_partial/${artId}`,
+                    type: 'PATCH',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ certification: newVal }),
+                    success: () => location.reload(),
+                    error: xhr => alert(`Speichern fehlgeschlagen (${xhr.status}): ${xhr.responseText}`)
+                });
+            });
+        });
+    </script>
+</body>
+</html>

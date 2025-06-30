@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Artikel hinzufügen</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container mt-4">
+    <!-- Common header with Home and Suppliers buttons -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Artikel hinzufügen</h1>
+        <div>
+            <a href="{{ url_for('index') }}" class="btn btn-primary">Home</a>
+            <a href="{{ url_for('suppliers') }}" class="btn btn-info">Suppliers</a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <form method="POST" class="mt-3">
+        <!-- Article Basic Information -->
+        <div class="mb-3">
+            <label class="form-label">Article Number</label>
+            <input type="text" class="form-control" name="article_number" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Article Name</label>
+            <input type="text" class="form-control" name="article_name" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Description (mandatory)</label>
+            <textarea class="form-control" name="description" rows="3" required></textarea>
+        </div>
+
+        <!-- Additional Article Details -->
+        <div class="mb-3">
+            <label class="form-label">Dimension</label>
+            <input type="text" class="form-control" name="dimension">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Item No. (Ext.) (mandatory)</label>
+            <input type="text" class="form-control" name="item_no_ext" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Order Number</label>
+            <input type="text" class="form-control" name="order_number">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Cost Type (mandatory)</label>
+            <input type="text" class="form-control" name="cost_type" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Category (mandatory)</label>
+            <input type="text" class="form-control" name="category" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Item Units (mandatory)</label>
+            <input type="text" class="form-control" name="item_units" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Quantity (mandatory)</label>
+            <input type="number" step="any" class="form-control" name="quantity" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Unit of Measure (mandatory)</label>
+            <input type="text" class="form-control" name="unit_of_measure" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Unit Price (mandatory)</label>
+            <input type="number" step="any" class="form-control" name="unit_price" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Price per Unit of Measure (mandatory)</label>
+            <input type="number" step="any" class="form-control" name="price_per_unit_of_measure" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Amount (mandatory)</label>
+            <input type="number" step="any" class="form-control" name="amount" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Delivery (Date)</label>
+            <input type="date" class="form-control" name="delivery">
+        </div>
+
+        <!-- Supplier Field -->
+        <div class="mb-3">
+            <label class="form-label">Supplier Number</label>
+            <input type="number" class="form-control" name="supplier_number">
+        </div>
+        <!-- New Field for Costplace -->
+        <div class="mb-3">
+            <label class="form-label">Costplace</label>
+            <input type="text" class="form-control" name="costplace">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Add Article</button>
+    </form>
+
+    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Search</a>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+</body>
+</html>
