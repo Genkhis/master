@@ -29,7 +29,11 @@ app = FastAPI(title="FastAPI", version="0.1.0")
 # Enable CORS for requests coming from your Flask frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5000"],  # Adjust if necessary
+    allow_origins=[
+        "https://procurement-ui.onrender.com",   #  ← add this
+        "http://localhost:5000",                 #  dev
+        # any other origins you need…
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
