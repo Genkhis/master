@@ -71,7 +71,7 @@
                         ('supplier_name','Lieferantenname'),
                         ('certification','Zertifizierung')
                         ] %}
-                        <option value="{{ fld }}" {% if fld= =fields[i] %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ fld }}" {% if fld==fields[i] %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
