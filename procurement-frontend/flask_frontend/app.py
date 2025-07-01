@@ -319,7 +319,18 @@ def add_supplier():
 
     return render_template("add_supplier.html")
 
+# ─── Kalkulation Seite ───────────────────────────────────────
+@app.route('/kalkulation')
+def kalkulation():
+    # TODO: lade hier beliebige Daten für die Kalkulation
+    return render_template('kalkulation.html')
 
+
+# ─── Controlling Seite ───────────────────────────────────────
+@app.route('/controlling')
+def controlling():
+    # TODO: lade hier Reports, Kennzahlen-Info etc.
+    return render_template('controlling.html')
 # ------------------------------------------------------------------
 # Run locally or via gunicorn
 # ------------------------------------------------------------------
