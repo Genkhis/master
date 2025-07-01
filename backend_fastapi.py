@@ -1,7 +1,7 @@
 ﻿from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy import create_engine, or_, func, text
 from sqlalchemy.orm import sessionmaker, Session, joinedload
-from models import Article, Supplier, ArticlePrice´, User, Role
+from models import Article, Supplier, ArticlePrice, User, Role
 from pydantic import BaseModel, Field     
 from datetime import date
 import pandas as pd
