@@ -1,7 +1,7 @@
 ﻿from fastapi import FastAPI, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy import create_engine, or_, func, text
 from sqlalchemy.orm import sessionmaker, Session, joinedload
-from models import Article, Supplier, ArticlePrice
+from models import Article, Supplier, ArticlePrice´, User, Role
 from pydantic import BaseModel, Field     
 from datetime import date
 import pandas as pd
@@ -15,8 +15,46 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import Header, Depends
+from fastapi_users import FastAPIUsers
+from fastapi_users.authentication import JWTAuthentication
+from fastapi_users.db import SQLAlchemyUserDatabase
+from schemas import UserCreate, UserRead, UserUpdate
 
+SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
 
+# 1) Create your UserDatabase adapter
+user_db = SQLAlchemyUserDatabase(User, SessionLocal())
+
+# 2) Configure JWT auth backend
+jwt_auth = JWTAuthentication(secret=SECRET, lifetime_seconds=3600)
+
+# 3) Instantiate FastAPIUsers
+fastapi_users = FastAPIUsers(
+    user_db,
+    [jwt_auth],
+    UserCreate,
+    UserRead,
+    UserUpdate,
+)
+
+app = FastAPI()
+
+# 4) Include the routers
+app.include_router(
+    fastapi_users.get_auth_router(jwt_auth),
+    prefix="/auth/jwt",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_register_router(),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_users_router(),
+    prefix="/users",
+    tags=["users"],
+)
 if Path(".env").exists():
     from dotenv import load_dotenv
     load_dotenv(override=True)  
@@ -55,7 +93,35 @@ def get_db():
 
 
 
+@app.on_event("startup")
+async def seed_roles_and_admin():
+    db: Session = SessionLocal()
+    try:
+        # 1) Ensure roles exist
+        for role_name in ("admin", "user"):
+            if not db.query(Role).filter_by(name=role_name).first():
+                db.add(Role(name=role_name))
+        db.commit()
 
+        # 2) Ensure initial superuser exists
+        admin_email = "admin@example.com"
+        admin_pw    = "ChangeMe123!"
+        user = db.query(User).filter_by(email=admin_email).first()
+        if not user:
+            hashed = get_password_hash(admin_pw)
+            user = User(
+                email=admin_email,
+                hashed_password=hashed,
+                is_active=True,
+                is_superuser=True
+            )
+            # assign the 'admin' role
+            admin_role = db.query(Role).filter_by(name="admin").one()
+            user.roles.append(admin_role)
+            db.add(user)
+            db.commit()
+    finally:
+        db.close()
 
 # Supplier models
 class SupplierCreate(BaseModel):

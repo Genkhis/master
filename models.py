@@ -1,8 +1,9 @@
 ﻿# models.py
 
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Table, Boolean
 from sqlalchemy.orm import relationship
 from database import Base
+from fastapi_users.db import GUID
 
 # ───────────────────────────────────────────────
 # Supplier (master)
@@ -48,7 +49,25 @@ class Article(Base):
     price_records = relationship("ArticlePrice", back_populates="article")
     supplier      = relationship("Supplier",   back_populates="articles")
 
+roles_users = Table(
+    'roles_users', Base.metadata,
+    Column('user_id', GUID, ForeignKey('users.id'), primary_key=True),
+    Column('role_id', GUID, ForeignKey('roles.id'), primary_key=True),
+)
 
+class Role(Base):
+    __tablename__ = 'roles'
+    id          = Column(GUID, primary_key=True, default=uuid4)
+    name        = Column(String, unique=True, nullable=False)
+
+class User(Base):
+    __tablename__ = 'users'
+    id               = Column(GUID, primary_key=True, default=uuid4)
+    email            = Column(String, unique=True, index=True, nullable=False)
+    hashed_password  = Column(String, nullable=False)
+    is_active        = Column(Boolean, default=True, nullable=False)
+    is_superuser     = Column(Boolean, default=False, nullable=False)
+    roles            = relationship('Role', secondary=roles_users, backref='users')
 # ───────────────────────────────────────────────
 # ArticlePrice (transaction / history)
 # ───────────────────────────────────────────────
