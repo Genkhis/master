@@ -6,6 +6,8 @@
     <title>Startseite – Beschaffungssystem</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         body {
             background-color: #f1f3f5;
@@ -44,9 +46,40 @@
                 Verwalten Sie Ihre Artikel, Lieferanten und den Preisverlauf
                 schnell und einfach an einem Ort.
             </p>
-            <a href="{{ url_for('all_articles') }}" class="btn btn-primary btn-lg">
-                Artikel suchen
-            </a>
+
+            <!-- Card Navigation -->
+            <div class="row">
+                <div class="col-12 col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-book" style="font-size: 2rem;"></i>
+                            <h5 class="card-title mt-2">Artikelstamm</h5>
+                            <p class="card-text">Hier werden alle Artikel gespeichert.</p>
+                            <a href="{{ url_for('all_articles') }}" class="btn btn-primary">Zu Artikelstamm</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-calculator" style="font-size: 2rem;"></i>
+                            <h5 class="card-title mt-2">Kalkulation</h5>
+                            <p class="card-text">Berechnen Sie Kosten und Preise.</p>
+                            <a href="{{ url_for('kalkulation') }}" class="btn btn-primary">Zur Kalkulation</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-bar-chart-line" style="font-size: 2rem;"></i>
+                            <h5 class="card-title mt-2">Controlling</h5>
+                            <p class="card-text">Überwachen Sie Kennzahlen und Reports.</p>
+                            <a href="{{ url_for('controlling') }}" class="btn btn-primary">Zum Controlling</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
