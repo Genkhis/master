@@ -30,6 +30,19 @@
             cursor: pointer;
             color: #dc3545;
         }
+
+        /* Spinner and loading state for certification select */
+        .spinner-sm {
+            width: 1rem;
+            height: 1rem;
+            vertical-align: text-bottom;
+            margin-left: 0.5rem;
+        }
+
+        .loading-select {
+            opacity: 0.7;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="container-fluid py-4">
@@ -71,7 +84,7 @@
                         ('supplier_name','Lieferantenname'),
                         ('certification','Zertifizierung')
                         ] %}
-                        <option value="{{ fld }}" {% if fld==fields[i] %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ fld }}" {% if fld= =fields[i] %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -153,22 +166,44 @@
                 });
             });
 
-            // ─── Certification inline save ─────────────────────────────
+            // ─── Certification inline save with loading spinner ──────────
             $(document).on('change', '.cert-select', function () {
-                const artId = $(this).data('articleId'),
-                      newVal = $(this).val();
+                const $select = $(this);
+                const artId   = $select.data('articleId');
+                const newVal  = $select.val();
                 if (!artId) {
-                    alert('Keine gültige Artikel-ID gefunden.');
-                    return;
+                    return alert('Keine gültige Artikel-ID gefunden.');
                 }
+
+                // Show spinner and disable select
+                const spinnerId = `cert-spinner-${artId}`;
+                if (!$('#' + spinnerId).length) {
+                    $select.after(
+                        `<div id="${spinnerId}" class="spinner-border spinner-sm" role="status" aria-hidden="true"></div>`
+                    );
+                }
+                $select.addClass('loading-select');
+
+                // AJAX PATCH request
                 $.ajax({
                     url: `${BASE_API_URL}/update_article_partial/${artId}`,
                     type: 'PATCH',
                     contentType: 'application/json',
                     data: JSON.stringify({ certification: newVal }),
-                    success: () => location.reload(),
-                    error: xhr =>
-                        alert(`Speichern fehlgeschlagen (${xhr.status}): ${xhr.responseText}`)
+
+                    success() {
+                        // Optional: show a success toast here
+                    },
+
+                    error(xhr) {
+                        alert(`Speichern fehlgeschlagen (${xhr.status}): ${xhr.responseText}`);
+                    },
+
+                    complete() {
+                        // Remove spinner and re-enable select
+                        $select.removeClass('loading-select');
+                        $(`#${spinnerId}`).remove();
+                    }
                 });
             });
         });
