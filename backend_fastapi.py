@@ -85,14 +85,6 @@ def get_db():
         db.close()
 
 
-
-
-
-
-
-
-
-
 @app.on_event("startup")
 async def seed_roles_and_admin():
     db: Session = SessionLocal()
