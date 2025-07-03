@@ -1,8 +1,7 @@
 ﻿from flask import Flask, render_template, request, redirect, url_for, flash
-from flask_migrate import Migrate
-migrate = Migrate(app, db)
-
-import requests, os
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate    import Migrate
+import os
 
 # ───────────────────────────
 # Flask setup
@@ -19,6 +18,9 @@ app.secret_key = os.getenv("FLASK_SECRET", "local-dev-secret")
 # ───────────────────────────
 BASE_API_URL = os.getenv("API_URL", "http://127.0.0.1:8001")
 app.config["API_URL"] = BASE_API_URL   # expose for templates & JS
+
+db      = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 # make {{ API_URL }} available in *all* templates
 @app.context_processor
