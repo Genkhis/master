@@ -1,13 +1,12 @@
-﻿# models.py
-
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Table, Boolean
+﻿from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Table, Boolean
 from sqlalchemy.orm import relationship
 from database import Base
 from fastapi_users.db import GUID
+from uuid import uuid4
 
-# ───────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────
 # Supplier (master)
-# ───────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────
 class Supplier(Base):
     __tablename__ = "suppliers"
 
@@ -19,10 +18,9 @@ class Supplier(Base):
 
     articles = relationship("Article", back_populates="supplier")
 
-
-# ───────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────
 # Article (master)
-# ───────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────
 class Article(Base):
     __tablename__ = "articles"
 
@@ -38,39 +36,51 @@ class Article(Base):
     item_no_ext     = Column(String)
     order_number    = Column(String)
 
-    # NEW: sustainability label  (LEED | BREEAM | EUTax | DGNB | "-")
+    # sustainability label  (LEED | BREEAM | EUTax | DGNB | "-")
     certification         = Column(String(10), default="-", nullable=False)
 
     sale_unit             = Column(String)
     units_per_sale_unit   = Column(Float)
     unit_per_package      = Column(Integer, default=1)
 
-    # relationships
     price_records = relationship("ArticlePrice", back_populates="article")
     supplier      = relationship("Supplier",   back_populates="articles")
 
+# ─────────────────────────────────────────────────────────────────────
+# Association table: Users ↔ Roles
+# ─────────────────────────────────────────────────────────────────────
 roles_users = Table(
     'roles_users', Base.metadata,
     Column('user_id', GUID, ForeignKey('users.id'), primary_key=True),
     Column('role_id', GUID, ForeignKey('roles.id'), primary_key=True),
 )
 
+# ─────────────────────────────────────────────────────────────────────
+# Role model
+# ─────────────────────────────────────────────────────────────────────
 class Role(Base):
     __tablename__ = 'roles'
-    id          = Column(GUID, primary_key=True, default=uuid4)
-    name        = Column(String, unique=True, nullable=False)
 
+    id   = Column(GUID, primary_key=True, default=uuid4)
+    name = Column(String, unique=True, nullable=False)
+
+# ─────────────────────────────────────────────────────────────────────
+# User model
+# ─────────────────────────────────────────────────────────────────────
 class User(Base):
     __tablename__ = 'users'
-    id               = Column(GUID, primary_key=True, default=uuid4)
-    email            = Column(String, unique=True, index=True, nullable=False)
-    hashed_password  = Column(String, nullable=False)
-    is_active        = Column(Boolean, default=True, nullable=False)
-    is_superuser     = Column(Boolean, default=False, nullable=False)
-    roles            = relationship('Role', secondary=roles_users, backref='users')
-# ───────────────────────────────────────────────
+
+    id              = Column(GUID, primary_key=True, default=uuid4)
+    email           = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    is_active       = Column(Boolean, default=True, nullable=False)
+    is_superuser    = Column(Boolean, default=False, nullable=False)
+
+    roles = relationship('Role', secondary=roles_users, backref='users')
+
+# ─────────────────────────────────────────────────────────────────────
 # ArticlePrice (transaction / history)
-# ───────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────
 class ArticlePrice(Base):
     __tablename__ = "article_prices"
 
