@@ -1,7 +1,10 @@
-﻿from flask import Flask, render_template, request, redirect, url_for, flash
+﻿from flask import (
+    Flask, render_template, request, redirect, url_for, flash, make_response
+)
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-import os, requests
+import os, requests, jwt, datetime
+from functools import wraps
 
 # ───────────────────────────
 # Flask setup
@@ -14,24 +17,53 @@ app = Flask(
 app.secret_key = os.getenv("FLASK_SECRET", "local-dev-secret")
 
 # ───────────────────────────
-# Config: API URL (Render vs local)
+# Config: DB + API URL
 # ───────────────────────────
-
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
-    'DATABASE_URL',
-    'sqlite:///app.db'  # fallback for local development
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+    "DATABASE_URL",
+    "sqlite:///app.db"                    # local fallback
 )
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db       = SQLAlchemy(app)
+migrate  = Migrate(app, db)
 
 BASE_API_URL = os.getenv("API_URL", "http://127.0.0.1:8001")
-app.config["API_URL"] = BASE_API_URL   # expose for templates & JS
-# make {{ API_URL }} available in *all* templates
+app.config["API_URL"] = BASE_API_URL
+
+JWT_SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
+
+# expose {{ API_URL }} in every template
 @app.context_processor
 def inject_api_url():
     return {"API_URL": app.config["API_URL"]}
+
+# ───────────────────────────
+# Auth helper & guard
+# ───────────────────────────
+EXEMPT_ENDPOINTS = {
+    "login", "static", "favicon",        # public pages/assets
+}
+
+def _current_user():
+    """Return True if a valid JWT is present, else False."""
+    token = (
+        request.cookies.get("jwt") or
+        request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+    )
+    if not token:
+        return False
+    try:
+        jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        return True
+    except jwt.PyJWTError:
+        return False
+
+@app.before_request
+def login_guard():
+    if request.endpoint in EXEMPT_ENDPOINTS or request.endpoint is None:
+        return  # let Flask handle static/login
+    if not _current_user():
+        return redirect(url_for("login", next=request.url))
 
 # ───────────────────────────
 # Helper
@@ -44,6 +76,11 @@ def _extract_filter_lists(form):
 # ───────────────────────────
 # Routes
 # ───────────────────────────
+@app.route("/login", methods=["GET"])
+def login():
+    """Render login page; token handling done client-side JS."""
+    return render_template("login.html")
+
 # Home
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -61,7 +98,6 @@ def index():
         flash("Error fetching articles", "danger")
 
     return render_template("index.html", articles=articles)
-
 
 # All articles (search + filters)
 @app.route("/all_articles", methods=["GET", "POST"])
@@ -93,7 +129,6 @@ def all_articles():
         articles=articles,
         filter_pairs=filter_pairs,
     )
-
 
 # ────────── Add Article
 @app.route("/add_article", methods=["GET", "POST"])
@@ -127,7 +162,6 @@ def add_article():
         return redirect(url_for("index"))
 
     return render_template("add_article.html")
-
 
 # ────────── Edit Article
 @app.route("/edit_article/<int:article_id>", methods=["GET", "POST"])
@@ -168,7 +202,6 @@ def edit_article(article_id):
 
     return render_template("edit_article.html", article=resp.json())
 
-
 # ────────── Delete Article
 @app.route("/delete_article/<int:article_id>")
 def delete_article(article_id):
@@ -179,7 +212,6 @@ def delete_article(article_id):
         "success" if resp.ok else "danger"
     )
     return redirect(url_for("index"))
-
 
 # ------------------------------------------------------------------
 # Price history
@@ -204,7 +236,6 @@ def price_history(supplier_number, item_no_ext):
         history=j["price_history"],
         supplier=supplier
     )
-
 
 # ------------------------------------------------------------------
 # Supplier list
@@ -239,7 +270,6 @@ def suppliers():
         query=query
     )
 
-
 # ------------------------------------------------------------------
 # Supplier > Articles page
 # ------------------------------------------------------------------
@@ -258,7 +288,6 @@ def supplier_articles(supplier_number):
 
     return render_template("supplier_articles.html",
                            supplier=supplier, articles=articles)
-
 
 # ------------------------------------------------------------------
 # Upload articles Excel
@@ -282,7 +311,6 @@ def upload_excel():
         return redirect(url_for("index"))
 
     return render_template("upload_excel.html")
-
 
 # ------------------------------------------------------------------
 # Upload suppliers Excel
@@ -308,7 +336,6 @@ def import_suppliers():
 
     return render_template("import_suppliers.html")
 
-
 # ------------------------------------------------------------------
 # Add supplier
 # ------------------------------------------------------------------
@@ -331,17 +358,15 @@ def add_supplier():
     return render_template("add_supplier.html")
 
 # ─── Kalkulation Seite ───────────────────────────────────────
-@app.route('/kalkulation')
+@app.route("/kalkulation")
 def kalkulation():
-    # TODO: lade hier beliebige Daten für die Kalkulation
-    return render_template('kalkulation.html')
-
+    return render_template("kalkulation.html")
 
 # ─── Controlling Seite ───────────────────────────────────────
-@app.route('/controlling')
+@app.route("/controlling")
 def controlling():
-    # TODO: lade hier Reports, Kennzahlen-Info etc.
-    return render_template('controlling.html')
+    return render_template("controlling.html")
+
 # ------------------------------------------------------------------
 # Run locally or via gunicorn
 # ------------------------------------------------------------------
