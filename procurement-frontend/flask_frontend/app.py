@@ -1,4 +1,7 @@
 ﻿from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_migrate import Migrate
+migrate = Migrate(app, db)
+
 import requests, os
 
 # ───────────────────────────
