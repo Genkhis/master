@@ -16,12 +16,18 @@ app.secret_key = os.getenv("FLASK_SECRET", "local-dev-secret")
 # ───────────────────────────
 # Config: API URL (Render vs local)
 # ───────────────────────────
-BASE_API_URL = os.getenv("API_URL", "http://127.0.0.1:8001")
-app.config["API_URL"] = BASE_API_URL   # expose for templates & JS
 
-db      = SQLAlchemy(app)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
+    'DATABASE_URL',
+    'sqlite:///app.db'  # fallback for local development
+)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+BASE_API_URL = os.getenv("API_URL", "http://127.0.0.1:8001")
+app.config["API_URL"] = BASE_API_URL   # expose for templates & JS
 # make {{ API_URL }} available in *all* templates
 @app.context_processor
 def inject_api_url():
