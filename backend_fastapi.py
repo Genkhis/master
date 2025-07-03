@@ -61,8 +61,7 @@ if Path(".env").exists():
 
 
 
-# Create a single FastAPI app instance
-app = FastAPI(title="FastAPI", version="0.1.0")
+
 
 # Enable CORS for requests coming from your Flask frontend
 app.add_middleware(
