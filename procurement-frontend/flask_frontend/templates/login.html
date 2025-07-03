@@ -31,6 +31,14 @@
     </div>
 </div>
 
+{% extends "base.html" %}
+{% block content %}
+<!-- … markup unchanged … -->
+<!-- jQuery *before* you call $('#login-form') -->
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"
+        integrity="sha256-VK1j0gq8X+0eA7e+zauE5Mprxji4osk2+Rb6JbQa9GU="
+        crossorigin="anonymous"></script>
+
 <script>
 (function () {
   const API = "{{ API_URL }}";
@@ -38,8 +46,6 @@
 
   $('#login-form').on('submit', function (e) {
     e.preventDefault();
-
-    // visual feedback
     $('#login-spinner').removeClass('d-none');
     $('#login-btn-text').text('Bitte warten …');
     $('#login-error').addClass('d-none');
@@ -52,14 +58,8 @@
         password: $('#password').val().trim()
       },
       success: data => {
-        // 1) store JWT (localStorage)
         localStorage.setItem('jwt', data.access_token);
-
-        // 2) optional: drop a cookie for automatic sending
-        // (remove SameSite=None if your UI + API share the same origin)
         document.cookie = `jwt=${data.access_token}; Path=/; SameSite=Lax;`;
-
-        // 3) redirect
         window.location.replace(nextUrl);
       },
       error: () => {
@@ -69,10 +69,12 @@
       },
       complete: () => {
         $('#login-spinner').addClass('d-none');
-        $('#login-btn-text').text('Login');
+        $('#login-btn_text').text('Login');
       }
     });
   });
 })();
 </script>
 {% endblock %}
+
+
