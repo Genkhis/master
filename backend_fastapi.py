@@ -23,7 +23,6 @@ from fastapi_users import FastAPIUsers
 from schemas import UserCreate, UserRead, UserUpdate
 
 SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
-current_user = fastapi_users.current_user()
 
 # 1) Create your UserDatabase adapter
 user_db = SQLAlchemyUserDatabase(User, SessionLocal())
@@ -39,6 +38,7 @@ fastapi_users = FastAPIUsers(
     UserRead,
     UserUpdate,
 )
+current_user = fastapi_users.current_user()
 
 app = FastAPI()
 
