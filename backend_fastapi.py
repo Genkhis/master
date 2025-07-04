@@ -22,6 +22,17 @@ from fastapi_users import FastAPIUsers
 
 from schemas import UserCreate, UserRead, UserUpdate
 
+bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
+
+def get_jwt_strategy() -> JWTStrategy:
+    return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
+
+auth_backend = AuthenticationBackend(
+    name="jwt",
+    transport=bearer_transport,
+    get_strategy=get_jwt_strategy,
+)
+
 SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
 
 # 1) Create your UserDatabase adapter
@@ -32,11 +43,12 @@ jwt_auth = JWTAuthentication(secret=SECRET, lifetime_seconds=3600)
 
 # 3) Instantiate FastAPIUsers
 fastapi_users = FastAPIUsers(
-    user_db,
-    [jwt_auth],
+    user_db,                   # or your get_user_db dependency
+    [auth_backend],
+    User,
     UserCreate,
-    UserRead,
     UserUpdate,
+    UserRead,
 )
 current_user = fastapi_users.current_user()
 
@@ -44,7 +56,7 @@ app = FastAPI()
 
 # 4) Include the routers
 app.include_router(
-    fastapi_users.get_auth_router(jwt_auth),
+    fastapi_users.get_auth_router(auth_backend),
     prefix="/auth/jwt",
     tags=["auth"],
 )
