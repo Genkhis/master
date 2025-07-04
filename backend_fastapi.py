@@ -13,14 +13,16 @@ from io import BytesIO
 from typing import Optional, List
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+from fastapi import Depends
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import Header, Depends
 from fastapi_users import FastAPIUsers
-from fastapi_users.authentication import JWTAuthentication
+from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
 from fastapi_users.db import SQLAlchemyUserDatabase
 from schemas import UserCreate, UserRead, UserUpdate
 
 SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
+current_user = fastapi_users.current_user()
 
 # 1) Create your UserDatabase adapter
 user_db = SQLAlchemyUserDatabase(User, SessionLocal())
