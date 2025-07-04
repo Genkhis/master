@@ -1,5 +1,5 @@
 ﻿from fastapi_users import schemas
-
+import uuid
 class RoleRead(schemas.BaseModel):
     id: uuid.UUID
     name: str
