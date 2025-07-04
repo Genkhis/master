@@ -1,14 +1,17 @@
 ﻿# models.py
 from uuid import uuid4
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from database import async_session
 
 from sqlalchemy import (
     Column, Integer, String, Float, Date, ForeignKey,
     Table, Boolean
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID    # native Postgres uuid
 
-from sqlalchemy.dialects.postgresql import UUID          # native Postgres uuid
-from database import Base                                # your SQLAlchemy base
+from database import Base                          # your SQLAlchemy base
 
 
 # ────────────────────────────────────────────────────────────
@@ -44,7 +47,8 @@ class Article(Base):
     item_no_ext     = Column(String)
     order_number    = Column(String)
 
-    certification         = Column(String(10), default="-", nullable=False)  # LEED|…
+    # sustainability label  (LEED | BREEAM | EUTax | DGNB | "-")
+    certification         = Column(String(10), default="-", nullable=False)
 
     sale_unit             = Column(String)
     units_per_sale_unit   = Column(Float)
@@ -77,16 +81,16 @@ class Role(Base):
 
 
 # ────────────────────────────────────────────────────────────
-# User model (compatible with FastAPI-Users v12 “sqlalchemy2” extra)
+# User model (FastAPI-Users v12 compatible)
 # ────────────────────────────────────────────────────────────
 class User(Base):
     __tablename__ = "users"
 
-    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    email          = Column(String, unique=True, index=True, nullable=False)
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    email           = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
 
-    is_active     = Column(Boolean, default=True, nullable=False)
+    is_active     = Column(Boolean, default=True,  nullable=False)
     is_superuser  = Column(Boolean, default=False, nullable=False)
     is_verified   = Column(Boolean, default=False, nullable=False)
 

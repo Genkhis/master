@@ -5,6 +5,8 @@ from models import Article, Supplier, ArticlePrice, User, Role
 from pydantic import BaseModel, Field     
 from datetime import date
 import pandas as pd
+from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
+from fastapi_users.db import SQLAlchemyUserDatabase
 from pathlib import Path
 import statistics
 from database import Base, engine, SessionLocal
@@ -17,8 +19,7 @@ from fastapi import Depends
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import Header, Depends
 from fastapi_users import FastAPIUsers
-from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
-from fastapi_users.db import SQLAlchemyUserDatabase
+
 from schemas import UserCreate, UserRead, UserUpdate
 
 SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
