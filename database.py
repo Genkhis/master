@@ -3,37 +3,40 @@ import os
 from pathlib import Path
 
 from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-# ───────────────────────────────────────────────────────────
-# 1) load local .env for dev; prod/render injects real ENV vars
-# ───────────────────────────────────────────────────────────
 if Path(".env").exists():
     from dotenv import load_dotenv
     load_dotenv(override=True)
 
-# ───────────────────────────────────────────────────────────
-# 2) SQLAlchemy base + engine factory
-# ───────────────────────────────────────────────────────────
-Base = declarative_base()
+DATABASE_URL_SYNC  = os.getenv("DATABASE_URL")
+if not DATABASE_URL_SYNC:
+    raise RuntimeError("DATABASE_URL not set")
+# use the same URL but with asyncpg for async
+DATABASE_URL_ASYNC = DATABASE_URL_SYNC.replace("postgresql://", "postgresql+asyncpg://")
 
-def get_engine():
-    url = os.getenv("DATABASE_URL")          # pooled URL in prod
-    if not url:
-        raise RuntimeError("DATABASE_URL not set")
-
-    return create_engine(
-        url,
-        future=True,                         # SQLAlchemy 2-style
-        pool_pre_ping=True,                 # survive PgBouncer kicks
-        connect_args={"sslmode": "require"},# Neon requires SSL
-    )
-
-engine = get_engine()
+# sync engine & session
+Base   = declarative_base()
+engine = create_engine(
+    DATABASE_URL_SYNC,
+    future=True,
+    pool_pre_ping=True,
+    connect_args={"sslmode": "require"},
+)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
-# ───────────────────────────────────────────────────────────
-# NOTE: Removed the import of Article, Supplier, ArticlePrice
-#       to break the circular dependency between database.py
-#       and models.py.
-# ───────────────────────────────────────────────────────────
+# async engine & session
+async_engine = create_async_engine(
+    DATABASE_URL_ASYNC,
+    future=True,
+    pool_pre_ping=True,
+)
+async_session = sessionmaker(
+    async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
+
+# now you can safely:
+# from database import async_session
