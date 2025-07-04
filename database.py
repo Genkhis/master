@@ -5,6 +5,11 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.engine.url import make_url
+
+# parse the sync URL and swap the driver name
+sync_url = make_url(os.environ["DATABASE_URL"])
+async_url = sync_url.set(drivername="postgresql+asyncpg")
 
 if Path(".env").exists():
     from dotenv import load_dotenv
@@ -28,9 +33,10 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 # async engine & session
 async_engine = create_async_engine(
-    DATABASE_URL_ASYNC,
+    async_url,
     future=True,
     pool_pre_ping=True,
+    connect_args={"sslmode": "require"},  # mirror your sync SSL settings
 )
 async_session = sessionmaker(
     async_engine,
