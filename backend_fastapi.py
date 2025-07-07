@@ -135,36 +135,6 @@ def get_db():
         db.close()
 
 
-@app.on_event("startup")
-async def seed_roles_and_admin():
-    db: Session = SessionLocal()
-    try:
-        # 1) Ensure roles exist
-        for role_name in ("admin", "user"):
-            if not db.query(Role).filter_by(name=role_name).first():
-                db.add(Role(name=role_name))
-        db.commit()
-
-        # 2) Ensure initial superuser exists
-        admin_email = "admin@example.com"
-        admin_pw    = "ChangeMe123!"
-        user = db.query(User).filter_by(email=admin_email).first()
-        if not user:
-            hashed = get_password_hash(admin_pw)
-            user = User(
-                email=admin_email,
-                hashed_password=hashed,
-                is_active=True,
-                is_superuser=True
-            )
-            # assign the 'admin' role
-            admin_role = db.query(Role).filter_by(name="admin").one()
-            user.roles.append(admin_role)
-            db.add(user)
-            db.commit()
-    finally:
-        db.close()
-
 # Supplier models
 class SupplierCreate(BaseModel):
     supplier_number: str
