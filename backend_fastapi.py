@@ -17,7 +17,7 @@ if Path(".env").exists():
     from dotenv import load_dotenv
     load_dotenv(override=True)
 
-SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
+SECRET = os.getenv("JWT_SECRET", "change-me")
 import statistics
 from database import Base, engine, SessionLocal, get_db
 import os
