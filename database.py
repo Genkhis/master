@@ -1,7 +1,7 @@
 ﻿# database.py  – central DB plumbing
 import os
 from pathlib import Path
-
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -43,6 +43,11 @@ async_session = sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
-
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 # now you can safely:
 # from database import async_session
