@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+
 {% block content %}
 <div class="row justify-content-center mt-5">
     <div class="col-md-4">
@@ -31,10 +32,7 @@
     </div>
 </div>
 
-{% extends "base.html" %}
-{% block content %}
-<!-- … markup unchanged … -->
-<!-- jQuery *before* you call $('#login-form') -->
+<!-- jQuery (must come before your script) -->
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"
         integrity="sha256-VK1j0gq8X+0eA7e+zauE5Mprxji4osk2+Rb6JbQa9GU="
         crossorigin="anonymous"></script>
@@ -42,7 +40,8 @@
 <script>
 (function () {
   const API = "{{ API_URL }}";
-  const nextUrl = new URLSearchParams(location.search).get("next") || "{{ url_for('index') }}";
+  const nextUrl = new URLSearchParams(location.search).get("next")
+                  || "{{ url_for('index') }}";
 
   $('#login-form').on('submit', function (e) {
     e.preventDefault();
@@ -52,7 +51,7 @@
 
     $.ajax({
       type: "POST",
-      url:  `${API}/auth/jwt/login`,
+      url: `${API}/auth/jwt/login`,
       data: {
         username: $('#email').val().trim(),
         password: $('#password').val().trim()
@@ -69,12 +68,10 @@
       },
       complete: () => {
         $('#login-spinner').addClass('d-none');
-        $('#login-btn_text').text('Login');
+        $('#login-btn-text').text('Login');
       }
     });
   });
 })();
 </script>
 {% endblock %}
-
-
