@@ -681,7 +681,8 @@ def price_history_by_composite(supplier_number: str,
 
 
 
-# Get Article by Composite Key (supplier_number + item_no_ext)
+# Get Article by Composite Key
+
 @app.get("/article_by_supplier_item/{supplier_number}/{item_no_ext}", tags=["Articles"])
 def get_article_by_supplier_item(supplier_number: str, item_no_ext: str, db: Session = Depends(get_db)):
     article = db.query(Article).options(joinedload(Article.supplier)).filter(
