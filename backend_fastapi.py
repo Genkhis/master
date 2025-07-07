@@ -45,13 +45,10 @@ auth_backend = AuthenticationBackend(
 # 1) Create your UserDatabase adapter
 user_db = SQLAlchemyUserDatabase(User, SessionLocal())
 
-# 3) Instantiate FastAPIUsers with your new `auth_backend`
+# 3) Instantiate FastAPIUsers (only needs your get_user_db and backends)
 fastapi_users = FastAPIUsers(
     user_db,
     [auth_backend],
-    UserCreate,
-    UserRead,
-    UserUpdate,
 )
 current_user = fastapi_users.current_user()
 
