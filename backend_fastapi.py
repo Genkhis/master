@@ -19,7 +19,7 @@ if Path(".env").exists():
 
 SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
 import statistics
-from database import Base, engine, SessionLocal
+from database import Base, engine, SessionLocal, get_db
 import os
 from schemas import UserCreate, UserRead, UserUpdate
 from io import BytesIO   
