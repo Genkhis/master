@@ -2,7 +2,7 @@
 
 from typing import AsyncGenerator, Optional
 from uuid import UUID
-
+from backend_fastapi import JWT_SECRET 
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
@@ -11,8 +11,7 @@ from db_adapter import get_user_db  # your existing adapter, no circular import
 from models import User
 
 # Use the same secret as your JWT strategy
-SECRET = "your‐jwt‐secret‐here"
-
+SECRET = JWT_SECRET  
 
 class UserManager(BaseUserManager[User, UUID]):
     """

@@ -17,7 +17,7 @@ if Path(".env").exists():
     from dotenv import load_dotenv
     load_dotenv(override=True)
 
-SECRET = os.getenv("JWT_SECRET", "change-me")
+JWT_SECRET = os.getenv("JWT_SECRET", "change-me")   # always a str fallback
 import statistics
 from database import Base, engine, SessionLocal, get_db
 import os
@@ -38,7 +38,10 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
-jwt_strategy = JWTStrategy(secret=os.getenv("JWT_SECRET"), lifetime_seconds=3600)
+jwt_strategy = JWTStrategy(
+    secret=JWT_SECRET,          # ← use the same str for every component
+    lifetime_seconds=3600,
+)
 bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
 auth_backend = AuthenticationBackend(
     name="jwt",
