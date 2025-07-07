@@ -23,23 +23,27 @@ if not DATABASE_URL_SYNC:
 # 2. URL objects (password kept intact)
 # --------------------------------------------------------------------------- #
 sync_url = make_url(DATABASE_URL_SYNC)
-async_url = sync_url.set(drivername="postgresql+asyncpg")
+clean_query = {k: v for k, v in sync_url.query.items() if k != "sslmode"}
 
+async_url = sync_url.set(
+    drivername="postgresql+asyncpg",
+    query=clean_query,          # <- no sslmode
+)
 # 3. Engines
 # --------------------------------------------------------------------------- #
 engine = create_engine(
-    sync_url,                   # URL object keeps password intact
+    sync_url,
     future=True,
     pool_pre_ping=True,
-    connect_args={"sslmode": "require"},   # ✅ psycopg2 flag
+    connect_args={"sslmode": "require"},   # psycopg2 needs this
+
 )
 
-# ----- async engine (asyncpg) ------------------------------------ #
 async_engine = create_async_engine(
-    async_url,                  # postgresql+asyncpg://
+    async_url,
     future=True,
     pool_pre_ping=True,
-    connect_args={"ssl": True},             # ✅ asyncpg flag
+    connect_args={"ssl": True},            # asyncpg needs this
 )
 
 # --------------------------------------------------------------------------- #
