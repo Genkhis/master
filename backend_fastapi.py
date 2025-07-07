@@ -54,7 +54,7 @@ current_user = fastapi_users.current_user()
 
 app = FastAPI()
 
-+# 4) Include the routers, now passing your schemas here
+# 4) Include the routers, now passing your schemas here
 app.include_router(
     fastapi_users.get_auth_router(auth_backend, UserRead),
     prefix="/auth/jwt",
