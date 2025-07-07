@@ -41,13 +41,14 @@ auth_backend = AuthenticationBackend(
     get_strategy=get_jwt_strategy,
 )
 
+def get_user_db():
+    yield SQLAlchemyUserDatabase(User, SessionLocal())
 
 # 1) Create your UserDatabase adapter
-user_db = SQLAlchemyUserDatabase(User, SessionLocal())
 
 # 3) Instantiate FastAPIUsers (only needs your get_user_db and backends)
 fastapi_users = FastAPIUsers(
-    user_db,
+    get_user_db,
     [auth_backend],
 )
 current_user = fastapi_users.current_user()
@@ -56,15 +57,17 @@ app = FastAPI()
 
 # 4) Include the routers, now passing your schemas here
 app.include_router(
-    fastapi_users.get_auth_router(auth_backend, UserRead),
+    fastapi_users.get_auth_router(auth_backend),
     prefix="/auth/jwt",
     tags=["auth"],
 )
+
 app.include_router(
-    fastapi_users.get_register_router(UserCreate),
+    fastapi_users.get_register_router(UserCreate, UserRead),
     prefix="/auth",
     tags=["auth"],
 )
+
 app.include_router(
     fastapi_users.get_users_router(UserRead, UserUpdate),
     prefix="/users",
