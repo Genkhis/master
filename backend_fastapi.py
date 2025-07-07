@@ -11,6 +11,7 @@ from pathlib import Path
 import statistics
 from database import Base, engine, SessionLocal
 import os
+from schemas import UserCreate, UserRead, UserUpdate
 from io import BytesIO   
 from typing import Optional, List
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +23,13 @@ from fastapi_users import FastAPIUsers
 
 from schemas import UserCreate, UserRead, UserUpdate
 
+
+
+
+# 1) load your secret first
+SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
+
+# 2) set up your bearer transport & strategy
 bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
 
 def get_jwt_strategy() -> JWTStrategy:
@@ -33,22 +41,17 @@ auth_backend = AuthenticationBackend(
     get_strategy=get_jwt_strategy,
 )
 
-SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
 
 # 1) Create your UserDatabase adapter
 user_db = SQLAlchemyUserDatabase(User, SessionLocal())
 
-# 2) Configure JWT auth backend
-jwt_auth = JWTAuthentication(secret=SECRET, lifetime_seconds=3600)
-
-# 3) Instantiate FastAPIUsers
+# 3) Instantiate FastAPIUsers with your new `auth_backend`
 fastapi_users = FastAPIUsers(
-    user_db,                   # or your get_user_db dependency
+    user_db,
     [auth_backend],
-    User,
     UserCreate,
-    UserUpdate,
     UserRead,
+    UserUpdate,
 )
 current_user = fastapi_users.current_user()
 
@@ -60,6 +63,7 @@ app.include_router(
     prefix="/auth/jwt",
     tags=["auth"],
 )
+
 app.include_router(
     fastapi_users.get_register_router(),
     prefix="/auth",
