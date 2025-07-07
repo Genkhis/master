@@ -7,6 +7,7 @@ from datetime import date
 import os
 from db_adapter import get_user_db
 import pandas as pd
+from managers import get_user_manager
 from uuid import UUID
 from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
 from fastapi_users.db import SQLAlchemyUserDatabase
@@ -55,7 +56,7 @@ def get_user_db():
 
 
 # 3) Instantiate FastAPIUsers (only needs your get_user_db and backends)
-ffastapi_users = FastAPIUsers[User, UUID](
+fastapi_users = FastAPIUsers[User, UUID](
     get_user_manager,
     [auth_backend],
     UserCreate, UserRead, UserUpdate
