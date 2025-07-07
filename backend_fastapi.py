@@ -57,9 +57,8 @@ def get_user_db():
 
 # 3) Instantiate FastAPIUsers (only needs your get_user_db and backends)
 fastapi_users = FastAPIUsers[User, UUID](
-    get_user_manager,
-    [auth_backend],
-    UserCreate, UserRead, UserUpdate
+    get_user_manager,     
+    [auth_backend],        
 )
 current_user = fastapi_users.current_user()
 
@@ -110,12 +109,6 @@ app.include_router(
     prefix="/users",
     tags=["users"],
 )
-
-
-
-
-
-
 
 # Enable CORS for requests coming from your Flask frontend
 app.add_middleware(
