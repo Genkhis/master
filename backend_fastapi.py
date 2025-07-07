@@ -5,6 +5,7 @@ from models import Article, Supplier, ArticlePrice, User, Role
 from pydantic import BaseModel, Field     
 from datetime import date
 import os
+from fastapi_users import FastAPIUsers
 from db_adapter import get_user_db
 import pandas as pd
 from managers import get_user_manager
@@ -18,7 +19,7 @@ if Path(".env").exists():
 
 SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
 import statistics
-from database import Base, engine, SessionLocal
+from database import Base, engine, SessionLocal, get_db
 import os
 from schemas import UserCreate, UserRead, UserUpdate
 from io import BytesIO   
@@ -51,14 +52,21 @@ auth_backend = AuthenticationBackend(
     get_strategy=get_jwt_strategy,
 )
 
-def get_user_db():
-    yield SQLAlchemyUserDatabase(User, SessionLocal())
+def get_user_db(session: Session = Depends(get_db)):
+    """
+    Yield a SQLAlchemyUserDatabase that wraps your User model
+    and your *scoped* session.
+    """
+    yield SQLAlchemyUserDatabase(User, session)
 
 
 # 3) Instantiate FastAPIUsers (only needs your get_user_db and backends)
 fastapi_users = FastAPIUsers[User, UUID](
-    get_user_manager,     
-    [auth_backend],        
+    get_user_manager,     # your BaseUserManager factory
+    [auth_backend],       # your JWT backend
+    UserCreate,           # schema used at registration
+    UserRead,             # schema used in responses
+    UserUpdate            # schema used at update
 )
 current_user = fastapi_users.current_user()
 
