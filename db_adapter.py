@@ -7,10 +7,6 @@ from models import User
 
 
 async def get_user_db(
-    # ✅ pass the *function*, NOT get_async_db()!
-    session: AsyncSession = Depends(get_async_db),
+    session: AsyncSession = Depends(get_async_db),   # ← no parentheses
 ):
-    """
-    Provide FastAPI-Users with an AsyncSession-backed user DB adapter.
-    """
     yield SQLAlchemyUserDatabase(session, User)

@@ -68,11 +68,11 @@ def get_db():
         db.close()
 
 
-@asynccontextmanager
+# ✅  NO decorator — just an async generator
 async def get_async_db():
-    """Yield an AsyncSession (non-blocking)."""
+    """Yield an AsyncSession (non-blocking) for use by FastAPI dependencies."""
     async with async_session() as session:
         try:
-            yield session
+            yield session        # ← FastAPI receives a real AsyncSession here
         finally:
             await session.close()
