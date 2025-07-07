@@ -9,6 +9,11 @@ from fastapi_users.password import get_password_hash
 from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
 from fastapi_users.db import SQLAlchemyUserDatabase
 from pathlib import Path
+if Path(".env").exists():
+    from dotenv import load_dotenv
+    load_dotenv(override=True)
+
+SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
 import statistics
 from database import Base, engine, SessionLocal
 import os
@@ -17,6 +22,7 @@ from io import BytesIO
 from typing import Optional, List
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+from passlib.context import CryptContext
 from fastapi import Depends
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import Header, Depends
@@ -25,14 +31,14 @@ from fastapi_users import FastAPIUsers
 from schemas import UserCreate, UserRead, UserUpdate
 
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
 
 
-# 1) load your secret first
-SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
 
-# 2) set up your bearer transport & strategy
+
 bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
-
 def get_jwt_strategy() -> JWTStrategy:
     return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
 
@@ -55,13 +61,10 @@ fastapi_users = FastAPIUsers(
 current_user = fastapi_users.current_user()
 
 app = FastAPI()
-# now every table mapped in Base (users, roles, articles, etc.) is guaranteed to exist
 @app.on_event("startup")
 def on_startup():
-    # 1) create all tables (users, roles, articles, etc.)
+    # create tables + seed roles & superuser
     Base.metadata.create_all(bind=engine)
-
-    # 2) then seed your roles & superuser
     db = SessionLocal()
     try:
         for role_name in ("admin", "user"):
@@ -69,11 +72,9 @@ def on_startup():
                 db.add(Role(name=role_name))
         db.commit()
 
-        # initial superuser
         admin_email = "admin@example.com"
         admin_pw    = "ChangeMe123!"
-        user = db.query(User).filter_by(email=admin_email).first()
-        if not user:
+        if not db.query(User).filter_by(email=admin_email).first():
             hashed = get_password_hash(admin_pw)
             user = User(
                 email=admin_email,
@@ -107,9 +108,7 @@ app.include_router(
     tags=["users"],
 )
 
-if Path(".env").exists():
-    from dotenv import load_dotenv
-    load_dotenv(override=True)  
+
 
 
 
