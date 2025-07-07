@@ -1,10 +1,13 @@
-﻿# managers.py
-from uuid import UUID
-from fastapi import Depends, Request
-from fastapi_users import BaseUserManager
+﻿from fastapi import Depends
 from fastapi_users.db import SQLAlchemyUserDatabase
-from database import SessionLocal
+
+# ─── import your existing adapter function ───
+from backend_fastapi import get_user_db    # ← adjust the module path as needed
+
 from models import User
+from fastapi_users import BaseUserManager
+from fastapi import Request
+from uuid import UUID
 
 SECRET = "…your JWT secret…"
 
@@ -17,8 +20,7 @@ class UserManager(BaseUserManager[User, UUID]):
         # optional hook
         ...
 
-# dependency that *yields* an instance of your manager
 async def get_user_manager(
-    user_db: SQLAlchemyUserDatabase = Depends(get_user_db),  # your existing adapter
+    user_db: SQLAlchemyUserDatabase = Depends(get_user_db),
 ) -> UserManager:
     yield UserManager(user_db)
