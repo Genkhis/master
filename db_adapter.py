@@ -1,11 +1,14 @@
-﻿# db_adapter.py
+﻿from fastapi import Depends
+from sqlalchemy.orm import Session
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
-from models import User
-from database import SessionLocal
+from database import SessionLocal, get_db    # your normal get_db→Session
+from models import User     
 
-def get_user_db():
-    db = SessionLocal()
+async def get_user_db(
+    session: Session = Depends(get_db),
+) -> SQLAlchemyUserDatabase[User]:
     try:
-        yield SQLAlchemyUserDatabase(User, db)
+        yield SQLAlchemyUserDatabase(User, session)
     finally:
-        db.close()
+        session.close()
+

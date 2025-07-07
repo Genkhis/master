@@ -38,10 +38,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
-def get_user_db(session: Session = Depends(get_db)):
-    yield SQLAlchemyUserDatabase(User, session)
-
-
 jwt_strategy = JWTStrategy(secret=os.getenv("JWT_SECRET"), lifetime_seconds=3600)
 bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
 auth_backend = AuthenticationBackend(
@@ -50,11 +46,9 @@ auth_backend = AuthenticationBackend(
     get_strategy=lambda: jwt_strategy,
 )
 
-
-
-fastapi_users = FastAPIUsers(
-    get_user_manager,
-    [auth_backend],
+fastapi_users = FastAPIUsers[User, UUID](
+    get_user_manager,    # your BaseUserManager factory
+    [auth_backend],      # list of backends
 )
 
 app = FastAPI()
@@ -92,13 +86,11 @@ app.include_router(
     prefix="/auth/jwt",
     tags=["auth"],
 )
-
 app.include_router(
-    fastapi_users.get_register_router(UserCreate, UserRead),
+    fastapi_users.get_register_router(UserRead, UserCreate),
     prefix="/auth",
     tags=["auth"],
 )
-
 app.include_router(
     fastapi_users.get_users_router(UserRead, UserUpdate),
     prefix="/users",
