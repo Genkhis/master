@@ -31,7 +31,7 @@ engine = create_engine(
     sync_url,                    # URL object → password NOT redacted
     future=True,
     pool_pre_ping=True,
-    connect_args={"sslmode": "require"},
+    connect_args={"ssl": True},
 )
 
 async_engine = create_async_engine(
