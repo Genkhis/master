@@ -54,6 +54,19 @@ fastapi_users = FastAPIUsers(
 current_user = fastapi_users.current_user()
 
 app = FastAPI()
+# now every table mapped in Base (users, roles, articles, etc.) is guaranteed to exist
+
+@app.on_event("startup")
+async def seed_roles_and_admin():
+    db = SessionLocal()
+    try:
+        for role_name in ("admin", "user"):
+            if not db.query(Role).filter_by(name=role_name).first():
+                db.add(Role(name=role_name))
+        db.commit()
+        # …
+    finally:
+        db.close()
 
 # 4) Include the routers, now passing your schemas here
 app.include_router(
