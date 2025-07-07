@@ -10,7 +10,7 @@ from db_adapter import get_user_db
 import pandas as pd
 from managers import get_user_manager
 from uuid import UUID
-from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
+from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy, CookieTransport
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from pathlib import Path
 if Path(".env").exists():
@@ -42,16 +42,24 @@ jwt_strategy = JWTStrategy(
     secret=JWT_SECRET,          # ← use the same str for every component
     lifetime_seconds=3600,
 )
-bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
+
+cookie_transport = CookieTransport(
+    cookie_name="jwt",        # ← matches Flask guard
+    cookie_max_age=3600,
+    cookie_secure=True,       # HTTPS only; set False *only* for local http://
+    cookie_httponly=True,     # JS can’t read it (safer)
+    cookie_samesite="none",   # cross-site because UI and API are on different domains
+)
 auth_backend = AuthenticationBackend(
     name="jwt",
-    transport=bearer_transport,
+    transport=cookie_transport,
     get_strategy=lambda: jwt_strategy,
+
 )
 
 fastapi_users = FastAPIUsers[User, UUID](
-    get_user_manager,    # your BaseUserManager factory
-    [auth_backend],      # list of backends
+    get_user_manager,
+    [auth_backend],
 )
 
 app = FastAPI()
@@ -99,7 +107,11 @@ app.include_router(
     prefix="/users",
     tags=["users"],
 )
-
+app.include_router(
+    fastapi_users.get_logout_router(auth_backend),
+    prefix="/auth/jwt",
+    tags=["auth"],
+)
 # Enable CORS for requests coming from your Flask frontend
 app.add_middleware(
     CORSMiddleware,

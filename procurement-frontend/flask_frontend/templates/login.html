@@ -19,40 +19,44 @@
         <div id="login-error" class="text-danger mt-3 d-none"></div>
     </div>
 </div>
+{% endblock %}
 
-<!-- 1) jQuery must load before your code -->
+{% block script %}
+<!-- 1) jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"
         integrity="sha256-VK1j0gq8X+0eA7e+zauE5Mprxji4osk2+Rb6JbQa9GU="
         crossorigin="anonymous">
 </script>
 
-<!-- 2) then your inline script -->
+<!-- 2) Login logic -->
 <script>
-  (function () {
+  (() => {
     const API     = "{{ API_URL }}";
-    const nextUrl = new URLSearchParams(location.search).get("next")
-                  || "{{ url_for('index') }}";
+    const nextUrl = new URLSearchParams(location.search).get("next") ||
+                    "{{ url_for('index') }}";
 
-    $('#login-form').on('submit', function (e) {
+    $('#login-form').on('submit', e => {
       e.preventDefault();
+
       $('#login-spinner').removeClass('d-none');
       $('#login-btn-text').text('Bitte warten …');
       $('#login-error').addClass('d-none');
 
       $.ajax({
-        type: "POST",
-        url:  `${API}/auth/jwt/login`,
-        data: {
-          username: $('#email').val().trim(),
-          password: $('#password').val().trim()
-        },
-        success: data => {
-          localStorage.setItem('jwt', data.access_token);
-          document.cookie = `jwt=${data.access_token}; Path=/; SameSite=Lax;`;
+        type         : "POST",
+        url          : `${API}/auth/jwt/login`,
+        crossDomain  : true,                     // allow cross-origin
+        xhrFields    : { withCredentials: true },// ← send & accept cookies
+        contentType  : "application/json",
+        data         : JSON.stringify({
+          username : $('#email').val().trim(),
+          password : $('#password').val().trim()
+        }),
+        success: () => {
+          // Cookie "jwt" is now set by the API; just redirect
           window.location.replace(nextUrl);
         },
-        error: (xhr, status, err) => {
-          console.error('Login failed:', status, err, xhr.responseText);
+        error: () => {
           $('#login-error')
             .text('Login fehlgeschlagen – bitte prüfe E-Mail & Passwort.')
             .removeClass('d-none');
