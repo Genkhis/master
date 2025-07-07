@@ -24,7 +24,37 @@ from fastapi_users import FastAPIUsers
 from schemas import UserCreate, UserRead, UserUpdate
 
 
+@app.on_event("startup")
+def on_startup():
+    # 1) create all tables (users, roles, articles, etc.)
+    Base.metadata.create_all(bind=engine)
 
+    # 2) then seed your roles & superuser
+    db = SessionLocal()
+    try:
+        for role_name in ("admin", "user"):
+            if not db.query(Role).filter_by(name=role_name).first():
+                db.add(Role(name=role_name))
+        db.commit()
+
+        # initial superuser
+        admin_email = "admin@example.com"
+        admin_pw    = "ChangeMe123!"
+        user = db.query(User).filter_by(email=admin_email).first()
+        if not user:
+            hashed = get_password_hash(admin_pw)
+            user = User(
+                email=admin_email,
+                hashed_password=hashed,
+                is_active=True,
+                is_superuser=True
+            )
+            admin_role = db.query(Role).filter_by(name="admin").one()
+            user.roles.append(admin_role)
+            db.add(user)
+            db.commit()
+    finally:
+        db.close()
 
 # 1) load your secret first
 SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
@@ -56,17 +86,6 @@ current_user = fastapi_users.current_user()
 app = FastAPI()
 # now every table mapped in Base (users, roles, articles, etc.) is guaranteed to exist
 
-@app.on_event("startup")
-async def seed_roles_and_admin():
-    db = SessionLocal()
-    try:
-        for role_name in ("admin", "user"):
-            if not db.query(Role).filter_by(name=role_name).first():
-                db.add(Role(name=role_name))
-        db.commit()
-        # …
-    finally:
-        db.close()
 
 # 4) Include the routers, now passing your schemas here
 app.include_router(
