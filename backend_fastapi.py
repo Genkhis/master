@@ -5,6 +5,7 @@ from models import Article, Supplier, ArticlePrice, User, Role
 from pydantic import BaseModel, Field     
 from datetime import date
 import pandas as pd
+from fastapi_users.password import get_password_hash
 from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
 from fastapi_users.db import SQLAlchemyUserDatabase
 from pathlib import Path
