@@ -24,6 +24,37 @@ from fastapi_users import FastAPIUsers
 from schemas import UserCreate, UserRead, UserUpdate
 
 
+
+
+# 1) load your secret first
+SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
+
+# 2) set up your bearer transport & strategy
+bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
+
+def get_jwt_strategy() -> JWTStrategy:
+    return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
+
+auth_backend = AuthenticationBackend(
+    name="jwt",
+    transport=bearer_transport,
+    get_strategy=get_jwt_strategy,
+)
+
+def get_user_db():
+    yield SQLAlchemyUserDatabase(User, SessionLocal())
+
+# 1) Create your UserDatabase adapter
+
+# 3) Instantiate FastAPIUsers (only needs your get_user_db and backends)
+fastapi_users = FastAPIUsers(
+    get_user_db,
+    [auth_backend],
+)
+current_user = fastapi_users.current_user()
+
+app = FastAPI()
+# now every table mapped in Base (users, roles, articles, etc.) is guaranteed to exist
 @app.on_event("startup")
 def on_startup():
     # 1) create all tables (users, roles, articles, etc.)
@@ -55,37 +86,6 @@ def on_startup():
             db.commit()
     finally:
         db.close()
-
-# 1) load your secret first
-SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
-
-# 2) set up your bearer transport & strategy
-bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
-
-def get_jwt_strategy() -> JWTStrategy:
-    return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
-
-auth_backend = AuthenticationBackend(
-    name="jwt",
-    transport=bearer_transport,
-    get_strategy=get_jwt_strategy,
-)
-
-def get_user_db():
-    yield SQLAlchemyUserDatabase(User, SessionLocal())
-
-# 1) Create your UserDatabase adapter
-
-# 3) Instantiate FastAPIUsers (only needs your get_user_db and backends)
-fastapi_users = FastAPIUsers(
-    get_user_db,
-    [auth_backend],
-)
-current_user = fastapi_users.current_user()
-
-app = FastAPI()
-# now every table mapped in Base (users, roles, articles, etc.) is guaranteed to exist
-
 
 # 4) Include the routers, now passing your schemas here
 app.include_router(
