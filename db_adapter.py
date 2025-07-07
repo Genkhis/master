@@ -6,9 +6,9 @@ from models import User
 
 async def get_user_db(
     session: Session = Depends(get_db),
-) -> SQLAlchemyUserDatabase[User]:
-    try:
-        yield SQLAlchemyUserDatabase(User, session)
-    finally:
-        session.close()
+) -> SQLAlchemyUserDatabase:
+    """
+    Yields a SQLAlchemyUserDatabase instance bound to your User model.
+    """
+    yield SQLAlchemyUserDatabase(User, session)
 
