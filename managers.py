@@ -1,17 +1,19 @@
 ﻿# managers.py
-
 from typing import AsyncGenerator, Optional
 from uuid import UUID
-from backend_fastapi import JWT_SECRET 
+import os
+
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 
-from db_adapter import get_user_db  # your existing adapter, no circular import
+from db_adapter import get_user_db
 from models import User
 
-# Use the same secret as your JWT strategy
-SECRET = JWT_SECRET  
+# ---------------------------------------------------------------------------
+# One single source: read JWT secret directly from env (with safe fallback)
+# ---------------------------------------------------------------------------
+SECRET = os.getenv("JWT_SECRET", "change-me")  # keep as str, do not .encode()
 
 class UserManager(BaseUserManager[User, UUID]):
     """
@@ -25,17 +27,15 @@ class UserManager(BaseUserManager[User, UUID]):
         self, user: User, request: Optional[Request] = None
     ) -> None:
         """
-        Called after a new user successfully registers.
-        You can send a welcome email here, etc.
+        Hook that runs right after a successful registration.
+        You can send a welcome email, log analytics, etc.
         """
-        # e.g. send_welcome_email(user.email)
         ...
 
-
+# ---------------------------------------------------------------------------
+# Dependency factory that FastAPI-Users will call
+# ---------------------------------------------------------------------------
 async def get_user_manager(
     user_db: SQLAlchemyUserDatabase = Depends(get_user_db),
 ) -> AsyncGenerator[UserManager, None]:
-    """
-    Dependency that yields a UserManager instance for FastAPI-Users.
-    """
     yield UserManager(user_db)
