@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker, Session, joinedload
 from models import Article, Supplier, ArticlePrice, User, Role
 from pydantic import BaseModel, Field     
 from datetime import date
+import os
 import pandas as pd
 from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
 from fastapi_users.db import SQLAlchemyUserDatabase
