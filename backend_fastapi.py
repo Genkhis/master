@@ -10,7 +10,7 @@ import pandas as pd
 from managers import get_user_manager
 from uuid import UUID
 from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
-from fastapi_users.db import SQLAlchemyUserDatabase
+from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from pathlib import Path
 if Path(".env").exists():
     from dotenv import load_dotenv

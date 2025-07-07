@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager
-from fastapi_users.db import SQLAlchemyUserDatabase
+from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 
 from db_adapter import get_user_db  # your existing adapter, no circular import
 from models import User

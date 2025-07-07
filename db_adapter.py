@@ -1,12 +1,11 @@
 ﻿# db_adapter.py
-from fastapi import Depends
-from fastapi_users.db import SQLAlchemyUserDatabase
-from database import SessionLocal
+from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from models import User
+from database import SessionLocal
 
 def get_user_db():
-    """
-    Adapter for fastapi-users. Yields a SQLAlchemyUserDatabase
-    bound to our User model and SessionLocal.
-    """
-    yield SQLAlchemyUserDatabase(User, SessionLocal())
+    db = SessionLocal()
+    try:
+        yield SQLAlchemyUserDatabase(User, db)
+    finally:
+        db.close()
