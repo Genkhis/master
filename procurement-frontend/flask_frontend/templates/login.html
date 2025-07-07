@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+
 {% block content %}
 <div class="row justify-content-center mt-5">
     <div class="col-md-4">
@@ -21,7 +22,8 @@
                        required>
             </div>
             <button class="btn btn-primary w-100" type="submit">
-                <span id="login-spinner" class="spinner-border spinner-border-sm d-none"
+                <span id="login-spinner"
+                      class="spinner-border spinner-border-sm d-none"
                       role="status" aria-hidden="true"></span>
                 <span id="login-btn-text">Login</span>
             </button>
@@ -30,59 +32,57 @@
         <div id="login-error" class="text-danger mt-3 d-none"></div>
     </div>
 </div>
+{% endblock %}
 
-<!-- jQuery (must come before your script) -->
+
+{% block scripts %}
+<!-- load jQuery first -->
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"
         integrity="sha256-VK1j0gq8X+0eA7e+zauE5Mprxji4osk2+Rb6JbQa9GU="
         crossorigin="anonymous"></script>
 
 <script>
-(function () {
-  const API = "{{ API_URL }}";
-  const nextUrl = new URLSearchParams(location.search).get("next")
-                  || "{{ url_for('index') }}";
+  (function () {
+    const API     = "{{ API_URL }}";
+    const nextUrl = new URLSearchParams(location.search).get("next")
+                    || "{{ url_for('index') }}";
 
-  $('#login-form').on('submit', function (e) {
-    e.preventDefault();
-    $('#login-spinner').removeClass('d-none');
-    $('#login-btn-text').text('Bitte warten …');
-    $('#login-error').addClass('d-none').text('');
+    $('#login-form').on('submit', function (e) {
+      e.preventDefault();
+      $('#login-spinner').removeClass('d-none');
+      $('#login-btn-text').text('Bitte warten …');
+      $('#login-error').addClass('d-none').text('');
 
-    $.ajax({
-      type: "POST",
-      url: `${API}/auth/jwt/login`,
-      data: {
-        username: $('#email').val().trim(),
-        password: $('#password').val().trim()
-      },
-      success: data => {
-        console.log("Login success:", data);
-        localStorage.setItem('jwt', data.access_token);
-        document.cookie = `jwt=${data.access_token}; Path=/; SameSite=Lax;`;
-        window.location.replace(nextUrl);
-      },
-      error: (xhr, status, err) => {
-        console.error("Login error:", status, err, xhr.responseText);
-        let message = 'Login fehlgeschlagen';
-        // try to parse JSON error detail
-        try {
-          const json = JSON.parse(xhr.responseText);
-          if (json.detail) {
-            message = json.detail;
-          }
-        } catch {
-          // not JSON, leave generic message
+      $.ajax({
+        type:    "POST",
+        url:     `${API}/auth/jwt/login`,
+        data:    {
+          username: $('#email').val().trim(),
+          password: $('#password').val().trim()
+        },
+        success: data => {
+          console.log("Login success:", data);
+          localStorage.setItem('jwt', data.access_token);
+          document.cookie = `jwt=${data.access_token}; Path=/; SameSite=Lax;`;
+          window.location.replace(nextUrl);
+        },
+        error: (xhr, status, err) => {
+          console.error("Login error:", status, err, xhr.responseText);
+          let message = 'Login fehlgeschlagen';
+          try {
+            const json = JSON.parse(xhr.responseText);
+            if (json.detail) message = json.detail;
+          } catch {}
+          $('#login-error')
+            .text(`Fehler ${xhr.status}: ${message}`)
+            .removeClass('d-none');
+        },
+        complete: () => {
+          $('#login-spinner').addClass('d-none');
+          $('#login-btn-text').text('Login');
         }
-        $('#login-error')
-          .text(`Fehler ${xhr.status}: ${message}`)
-          .removeClass('d-none');
-      },
-      complete: () => {
-        $('#login-spinner').addClass('d-none');
-        $('#login-btn-text').text('Login');
-      }
+      });
     });
-  });
-})();
+  })();
 </script>
 {% endblock %}
