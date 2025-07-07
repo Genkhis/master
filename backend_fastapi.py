@@ -7,6 +7,7 @@ from datetime import date
 import os
 from db_adapter import get_user_db
 import pandas as pd
+from uuid import UUID
 from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
 from fastapi_users.db import SQLAlchemyUserDatabase
 from pathlib import Path
@@ -52,10 +53,9 @@ auth_backend = AuthenticationBackend(
 def get_user_db():
     yield SQLAlchemyUserDatabase(User, SessionLocal())
 
-# 1) Create your UserDatabase adapter
 
 # 3) Instantiate FastAPIUsers (only needs your get_user_db and backends)
-fastapi_users = FastAPIUsers[User, UUID](
+ffastapi_users = FastAPIUsers[User, UUID](
     get_user_manager,
     [auth_backend],
     UserCreate, UserRead, UserUpdate
