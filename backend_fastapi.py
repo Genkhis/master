@@ -54,23 +54,23 @@ current_user = fastapi_users.current_user()
 
 app = FastAPI()
 
-# 4) Include the routers
++# 4) Include the routers, now passing your schemas here
 app.include_router(
-    fastapi_users.get_auth_router(auth_backend),
+    fastapi_users.get_auth_router(auth_backend, UserRead),
     prefix="/auth/jwt",
     tags=["auth"],
 )
-
 app.include_router(
-    fastapi_users.get_register_router(),
+    fastapi_users.get_register_router(UserCreate),
     prefix="/auth",
     tags=["auth"],
 )
 app.include_router(
-    fastapi_users.get_users_router(),
+    fastapi_users.get_users_router(UserRead, UserUpdate),
     prefix="/users",
     tags=["users"],
 )
+
 if Path(".env").exists():
     from dotenv import load_dotenv
     load_dotenv(override=True)  
