@@ -39,7 +39,7 @@ async_engine = create_async_engine(
     async_url,                   # asyncpg driver, password intact
     future=True,
     pool_pre_ping=True,
-    connect_args={"sslmode": "require"},
+    connect_args={"ssl": True},
 )
 
 # --------------------------------------------------------------------------- #
