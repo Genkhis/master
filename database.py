@@ -25,7 +25,6 @@ if not DATABASE_URL_SYNC:
 sync_url = make_url(DATABASE_URL_SYNC)
 async_url = sync_url.set(drivername="postgresql+asyncpg")
 
-# --------------------------------------------------------------------------- #
 # 3. Engines
 # --------------------------------------------------------------------------- #
 engine = create_engine(
