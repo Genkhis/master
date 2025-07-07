@@ -1,15 +1,13 @@
-﻿from fastapi import Depends
+﻿# managers.py
+from fastapi import Depends
 from fastapi_users.db import SQLAlchemyUserDatabase
-
-# ─── import your existing adapter function ───
-from backend_fastapi import get_user_db    # ← adjust the module path as needed
-
-from models import User
+from db_adapter import get_user_db    # ← no more circular import
 from fastapi_users import BaseUserManager
 from fastapi import Request
+from models import User
 from uuid import UUID
 
-SECRET = "…your JWT secret…"
+SECRET = "your‐jwt‐secret‐here"
 
 class UserManager(BaseUserManager[User, UUID]):
     user_db_model = User
@@ -17,7 +15,7 @@ class UserManager(BaseUserManager[User, UUID]):
     verification_token_secret   = SECRET
 
     async def on_after_register(self, user: User, request: Request | None = None):
-        # optional hook
+        # optional
         ...
 
 async def get_user_manager(

@@ -5,7 +5,7 @@ from models import Article, Supplier, ArticlePrice, User, Role
 from pydantic import BaseModel, Field     
 from datetime import date
 import os
-from managers import get_user_manager
+from db_adapter import get_user_db
 import pandas as pd
 from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
 from fastapi_users.db import SQLAlchemyUserDatabase
@@ -56,9 +56,9 @@ def get_user_db():
 
 # 3) Instantiate FastAPIUsers (only needs your get_user_db and backends)
 fastapi_users = FastAPIUsers[User, UUID](
-    get_user_manager,        # ← here
+    get_user_manager,
     [auth_backend],
-    UserCreate, UserRead, UserUpdate,
+    UserCreate, UserRead, UserUpdate
 )
 current_user = fastapi_users.current_user()
 
