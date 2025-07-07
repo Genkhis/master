@@ -28,17 +28,18 @@ async_url = sync_url.set(drivername="postgresql+asyncpg")
 # 3. Engines
 # --------------------------------------------------------------------------- #
 engine = create_engine(
-    sync_url,                    # URL object → password NOT redacted
+    sync_url,                   # URL object keeps password intact
     future=True,
     pool_pre_ping=True,
-    connect_args={"ssl": True},
+    connect_args={"sslmode": "require"},   # ✅ psycopg2 flag
 )
 
+# ----- async engine (asyncpg) ------------------------------------ #
 async_engine = create_async_engine(
-    async_url,                   # asyncpg driver, password intact
+    async_url,                  # postgresql+asyncpg://
     future=True,
     pool_pre_ping=True,
-    connect_args={"ssl": True},
+    connect_args={"ssl": True},             # ✅ asyncpg flag
 )
 
 # --------------------------------------------------------------------------- #
