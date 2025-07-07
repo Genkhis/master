@@ -30,7 +30,6 @@ from passlib.context import CryptContext
 from fastapi import Depends
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import Header, Depends
-from fastapi_users import FastAPIUsers
 
 from schemas import UserCreate, UserRead, UserUpdate
 
@@ -39,36 +38,24 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
-
-
-
-bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
-def get_jwt_strategy() -> JWTStrategy:
-    return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
-
-auth_backend = AuthenticationBackend(
-    name="jwt",
-    transport=bearer_transport,
-    get_strategy=get_jwt_strategy,
-)
-
 def get_user_db(session: Session = Depends(get_db)):
-    """
-    Yield a SQLAlchemyUserDatabase that wraps your User model
-    and your *scoped* session.
-    """
     yield SQLAlchemyUserDatabase(User, session)
 
 
-# 3) Instantiate FastAPIUsers (only needs your get_user_db and backends)
-fastapi_users = FastAPIUsers[User, UUID](
-    get_user_manager,     # your BaseUserManager factory
-    [auth_backend],       # your JWT backend
-    UserCreate,           # schema used at registration
-    UserRead,             # schema used in responses
-    UserUpdate            # schema used at update
+jwt_strategy = JWTStrategy(secret=os.getenv("JWT_SECRET"), lifetime_seconds=3600)
+bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
+auth_backend = AuthenticationBackend(
+    name="jwt",
+    transport=bearer_transport,
+    get_strategy=lambda: jwt_strategy,
 )
-current_user = fastapi_users.current_user()
+
+
+
+fastapi_users = FastAPIUsers(
+    get_user_manager,
+    [auth_backend],
+)
 
 app = FastAPI()
 @app.on_event("startup")
