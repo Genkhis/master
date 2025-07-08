@@ -44,10 +44,11 @@ jwt_strategy = JWTStrategy(
 )
 
 cookie_transport = CookieTransport(
-    cookie_name="jwt",                 # <- matches Flask
-    cookie_domain=".onrender.com",     # <- shared for ui & api sub-domains
-    cookie_secure=True,                # Render is HTTPS
-    cookie_httponly=True,
+    cookie_name="jwt",
+    cookie_max_age=3600,
+    cookie_path="/",
+    cookie_domain=".onrender.com",   
+    cookie_secure=True,
     cookie_samesite="lax",
 )
 auth_backend = AuthenticationBackend(
@@ -133,18 +134,6 @@ def get_db():
 
 
 logout_router = APIRouter(tags=["auth"])
-
-@logout_router.post("/auth/logout", status_code=status.HTTP_200_OK)
-def cookie_logout(response: Response):
-    """
-    Log the user out by clearing the JWT cookie.
-    """
-    response.delete_cookie(
-        key="jwt",
-        domain=".onrender.com",   # match whatever you set in CookieTransport
-        path="/",
-    )
-    return {"detail": "Logged out"}
 
 app.include_router(logout_router)
 @logout_router.post("/auth/logout", status_code=status.HTTP_200_OK)
