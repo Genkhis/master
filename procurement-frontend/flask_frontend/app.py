@@ -56,16 +56,16 @@ def _current_user():
         request.cookies.get("jwt") or
         request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
     )
-    log.info("PATH=%s  jwt-cookie-present=%s", request.path, bool(request.cookies.get("jwt")))
+    log.info("PATH=%s  cookie-present=%s", request.path, bool(request.cookies.get("jwt")))
     if not token:
-        log.info("→ no token found ⇒ unauthenticated")
+        log.info("→ no token")
         return False
     try:
         jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         log.info("→ token valid")
         return True
-    except jwt.PyJWTError as e:
-        log.info("→ token INVALID: %s", e)
+    except jwt.PyJWTError as exc:
+        log.info("→ token INVALID: %s", exc)
         return False
 
 
