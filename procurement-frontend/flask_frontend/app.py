@@ -69,12 +69,6 @@ def _current_user():
         return False
 
 
-@app.before_request
-def login_guard():
-    if request.endpoint in EXEMPT_ENDPOINTS or request.endpoint is None:
-        return  # let Flask handle static/login
-    if not _current_user():
-        return redirect(url_for("login", next=request.url))
 
 # ───────────────────────────
 # Helper
@@ -95,15 +89,17 @@ def login():
 # Home
 @app.route("/", methods=["GET", "POST"])
 def index():
+    token = _token_from_browser()           # 🔸 NEW
+
     query     = request.args.get("query", "")
     filter_by = request.args.get("filter_by", "")
     if request.method == "POST":
         query     = request.form.get("query", "")
         filter_by = request.form.get("filter_by", "")
 
-    resp = requests.get(
-        f"{BASE_API_URL}/articles/?query={query}&filter_by={filter_by}"
-    )
+    resp = _api_get(f"/articles/?query={query}&filter_by={filter_by}",
+                    token=token)            # 🔸 NEW
+
     articles = resp.json() if resp.ok else []
     if not resp.ok:
         flash("Error fetching articles", "danger")
@@ -140,6 +136,23 @@ def all_articles():
         articles=articles,
         filter_pairs=filter_pairs,
     )
+
+
+def _token_from_browser() -> str | None:
+    """Return the JWT we stored in document.cookie (may be None)."""
+    return request.cookies.get("token")
+
+def _api_get(path: str, *, token: str | None = None):
+    hdrs = {"Authorization": f"Bearer {token}"} if token else {}
+    return requests.get(f"{BASE_API_URL}{path}", headers=hdrs)
+
+def _api_post(path: str, *, json: dict | None = None, token: str | None = None):
+    hdrs = {"Authorization": f"Bearer {token}"} if token else {}
+    return requests.post(f"{BASE_API_URL}{path}", json=json, headers=hdrs)
+
+# inside a view
+token = _token_from_browser()
+resp  = _api_get("/articles/", token=token)
 
 # ────────── Add Article
 @app.route("/add_article", methods=["GET", "POST"])

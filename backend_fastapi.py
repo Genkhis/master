@@ -10,7 +10,7 @@ from db_adapter import get_user_db
 import pandas as pd
 from managers import get_user_manager
 from uuid import UUID
-from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy, CookieTransport
+from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy, BearerTransport
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from pathlib import Path
 if Path(".env").exists():
@@ -33,6 +33,7 @@ from fastapi import Header, Depends
 
 from schemas import UserCreate, UserRead, UserUpdate
 
+bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def get_password_hash(password: str) -> str:
@@ -43,19 +44,12 @@ jwt_strategy = JWTStrategy(
     lifetime_seconds=3600,
 )
 
-cookie_transport = CookieTransport(
-    cookie_name    = "jwt",
-    cookie_max_age = 3600,
-    cookie_domain  = ".onrender.com",   # leading dot → works for sub-domains
-    cookie_secure  = True,
-    cookie_samesite= "none",            # must be "none" when Secure + cross-site
-)
+
 
 auth_backend = AuthenticationBackend(
     name="jwt",
-    transport=cookie_transport,
+    transport=bearer_transport,
     get_strategy=lambda: jwt_strategy,
-
 )
 
 fastapi_users = FastAPIUsers[User, UUID](
@@ -85,6 +79,7 @@ def on_startup():
                 is_active=True,
                 is_superuser=True
             )
+
             admin_role = db.query(Role).filter_by(name="admin").one()
             user.roles.append(admin_role)
             db.add(user)
@@ -127,20 +122,6 @@ def get_db():
 
 
 
-logout_router = APIRouter(tags=["auth"])
-
-app.include_router(logout_router)
-@logout_router.post("/auth/logout", status_code=status.HTTP_200_OK)
-def cookie_logout(response: Response):
-    """
-    Log the user out by clearing the JWT cookie.
-    """
-    response.delete_cookie(
-        key="jwt",
-        domain=".onrender.com",   # match whatever you set in CookieTransport
-        path="/",
-    )
-    return {"detail": "Logged out"}
 
 
 # Supplier models
