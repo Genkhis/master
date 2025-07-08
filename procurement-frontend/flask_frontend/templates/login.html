@@ -27,20 +27,27 @@
 
 {% block script %}
 <script>
-(() => {
+document.addEventListener('DOMContentLoaded', () => {
+
+  /* -------- helpers & constants -------- */
   const $ = sel => document.querySelector(sel);
 
   const API     = "{{ API_URL }}";
-  const nextUrl = new URLSearchParams(location.search).get('next')
-               || "{{ url_for('index') }}";
+  const nextUrl = new URLSearchParams(location.search).get('next') ||
+                  "{{ url_for('index') }}";
 
-  $('#login-form').addEventListener('submit', async ev => {
+  const form = $('#login-form');
+  if (!form) return;                       // sanity-check
+
+  /* -------- submit handler -------- */
+  form.addEventListener('submit', async ev => {
     ev.preventDefault();
 
     $('#login-spinner').classList.remove('d-none');
     $('#login-btn-text').textContent = 'Bitte warten …';
     $('#login-error').classList.add('d-none');
 
+    /* CookieTransport → url-encoded body */
     const body = new URLSearchParams({
       username: $('#email').value.trim(),
       password: $('#password').value.trim()
@@ -50,26 +57,27 @@
       const resp = await fetch(`${API}/auth/jwt/login`, {
         method      : 'POST',
         mode        : 'cors',
-        credentials : 'include',   //  <-- cookie travels both ways
+        credentials : 'include',          // send & accept cookies
         headers     : { 'Content-Type': 'application/x-www-form-urlencoded' },
         body
       });
 
-      if (!resp.ok) throw new Error('auth-failed');
+      if (!resp.ok) throw new Error('auth-failed');    // 4xx/5xx
 
-      /* Cookie “jwt” is already set by the API.
-         FastAPI-Users returns 204 No Content => nothing to parse */
+      /* success (204) – cookie "jwt" is now stored */
       window.location.replace(nextUrl);
 
-    } catch (err) {
-      $('#login-error').textContent =
+    } catch {
+      const errBox = $('#login-error');
+      errBox.textContent =
         'Login fehlgeschlagen – bitte E-Mail & Passwort prüfen.';
-      $('#login-error').classList.remove('d-none');
+      errBox.classList.remove('d-none');
     } finally {
       $('#login-spinner').classList.add('d-none');
       $('#login-btn-text').textContent = 'Login';
     }
   });
-})();
+});
 </script>
 {% endblock %}
+
