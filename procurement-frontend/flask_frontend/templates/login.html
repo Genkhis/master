@@ -1,21 +1,31 @@
+{# templates/login.html ---------------------------------------------------- #}
 {% extends "base.html" %}
 
 {% block content %}
-<!-- form remains unchanged -->
 <div class="row justify-content-center mt-5">
     <div class="col-md-4">
         <h3 class="mb-3 text-center">Anmelden</h3>
 
         <form id="login-form" autocomplete="off">
             <div class="mb-3">
-                <input type="email" id="email" class="form-control" placeholder="E-Mail" required>
+                <input type="email"
+                       id="email"
+                       class="form-control"
+                       placeholder="E-Mail"
+                       required>
             </div>
+
             <div class="mb-3">
-                <input type="password" id="password" class="form-control" placeholder="Passwort" required>
+                <input type="password"
+                       id="password"
+                       class="form-control"
+                       placeholder="Passwort"
+                       required>
             </div>
 
             <button class="btn btn-primary w-100" type="submit">
-                <span id="login-spinner" class="spinner-border spinner-border-sm d-none"></span>
+                <span id="login-spinner"
+                      class="spinner-border spinner-border-sm d-none"></span>
                 <span id="login-btn-text">Login</span>
             </button>
         </form>
@@ -25,30 +35,28 @@
 </div>
 {% endblock %}
 
-{% extends "base.html" %}
-
-{% block content %}
-…              {#  your login form markup – unchanged #}
-{% endblock %}
-
 {% block script %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  /* helpers & constants */
+  /* ───── helpers & constants ───── */
   const $ = sel => document.querySelector(sel);
+
   const API     = "{{ API_URL }}";
-  const nextUrl = new URLSearchParams(location.search).get('next')
-                || "{{ url_for('index') }}";
+  const nextUrl = new URLSearchParams(location.search).get('next') ||
+                  "{{ url_for('index') }}";
 
   const form = $('#login-form');
-  if (!form) return;
+  if (!form) return;                         // should never happen
 
+  /* ───── submit handler ───── */
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
+
     $('#login-spinner').classList.remove('d-none');
     $('#login-btn-text').textContent = 'Bitte warten …';
     $('#login-error').classList.add('d-none');
 
+    /* CookieTransport → url-encoded payload */
     const body = new URLSearchParams({
       username: $('#email').value.trim(),
       password: $('#password').value.trim()
@@ -58,14 +66,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const resp = await fetch(`${API}/auth/jwt/login`, {
         method      : 'POST',
         mode        : 'cors',
-        credentials : 'include',
+        credentials : 'include',   // send & accept cookies
         headers     : { 'Content-Type': 'application/x-www-form-urlencoded' },
         body
       });
-      if (!resp.ok) throw new Error();
+      if (!resp.ok) throw new Error('auth-failed');
 
-      /* 204 No Content — cookie “jwt” now set by backend */
+      /* 204 No Content — backend has set the “jwt” cookie */
       window.location.replace(nextUrl);
+
     } catch {
       const box = $('#login-error');
       box.textContent =
@@ -79,5 +88,3 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 {% endblock %}
-
-
