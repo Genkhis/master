@@ -1,23 +1,21 @@
 {% extends "base.html" %}
 
 {% block content %}
+<!-- form remains unchanged -->
 <div class="row justify-content-center mt-5">
     <div class="col-md-4">
         <h3 class="mb-3 text-center">Anmelden</h3>
 
         <form id="login-form" autocomplete="off">
             <div class="mb-3">
-                <input type="email" class="form-control" id="email"
-                       placeholder="E-Mail" required>
+                <input type="email" id="email" class="form-control" placeholder="E-Mail" required>
             </div>
             <div class="mb-3">
-                <input type="password" class="form-control" id="password"
-                       placeholder="Passwort" required>
+                <input type="password" id="password" class="form-control" placeholder="Passwort" required>
             </div>
 
             <button class="btn btn-primary w-100" type="submit">
-                <span id="login-spinner"
-                      class="spinner-border spinner-border-sm d-none"></span>
+                <span id="login-spinner" class="spinner-border spinner-border-sm d-none"></span>
                 <span id="login-btn-text">Login</span>
             </button>
         </form>
@@ -30,22 +28,19 @@
 {% block script %}
 <script>
 (() => {
-  /* ---------- helpers & constants ---------------------------------- */
-  const $   = sel => document.querySelector(sel);
-  const API = "{{ API_URL }}";
-  const nextUrl =
-        new URLSearchParams(location.search).get('next') ||
-        "{{ url_for('index') }}";
+  const $ = sel => document.querySelector(sel);
 
-  /* ---------- form submit ------------------------------------------ */
-  $('#login-form').addEventListener('submit', async e => {
-    e.preventDefault();
+  const API     = "{{ API_URL }}";
+  const nextUrl = new URLSearchParams(location.search).get('next')
+               || "{{ url_for('index') }}";
+
+  $('#login-form').addEventListener('submit', async ev => {
+    ev.preventDefault();
 
     $('#login-spinner').classList.remove('d-none');
     $('#login-btn-text').textContent = 'Bitte warten …';
     $('#login-error').classList.add('d-none');
 
-    /* build classic application/x-www-form-urlencoded body */
     const body = new URLSearchParams({
       username: $('#email').value.trim(),
       password: $('#password').value.trim()
@@ -55,23 +50,21 @@
       const resp = await fetch(`${API}/auth/jwt/login`, {
         method      : 'POST',
         mode        : 'cors',
-        credentials : 'include',                 // send/receive cookies
+        credentials : 'include',   //  <-- cookie travels both ways
         headers     : { 'Content-Type': 'application/x-www-form-urlencoded' },
         body
       });
 
       if (!resp.ok) throw new Error('auth-failed');
 
-      const { access_token } = await resp.json();
-      /* keep a copy for non-cookie fallback (optional) */
-      document.cookie = `jwt=${access_token}; Path=/; SameSite=Lax;`;
+      /* Cookie “jwt” is already set by the API.
+         FastAPI-Users returns 204 No Content => nothing to parse */
       window.location.replace(nextUrl);
 
     } catch (err) {
       $('#login-error').textContent =
-        'Login fehlgeschlagen – bitte prüfe E-Mail & Passwort.';
+        'Login fehlgeschlagen – bitte E-Mail & Passwort prüfen.';
       $('#login-error').classList.remove('d-none');
-
     } finally {
       $('#login-spinner').classList.add('d-none');
       $('#login-btn-text').textContent = 'Login';
