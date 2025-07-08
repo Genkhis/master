@@ -44,11 +44,12 @@ jwt_strategy = JWTStrategy(
 )
 
 cookie_transport = CookieTransport(
-    cookie_name="jwt",
-    cookie_max_age=3600,
-    cookie_domain=".onrender.com",
-    cookie_secure=True,
-    cookie_samesite="none",   # cross-site cookie
+     cookie_name     = "jwt",
+     cookie_max_age  = 3600,
+     cookie_path     = "/",
+     cookie_domain   = ".onrender.com",
+     cookie_secure   = True,
+     cookie_samesite = "none",  
 )
 auth_backend = AuthenticationBackend(
     name="jwt",
