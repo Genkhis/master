@@ -44,11 +44,11 @@ jwt_strategy = JWTStrategy(
 )
 
 cookie_transport = CookieTransport(
-    cookie_name="jwt",        # ← matches Flask guard
-    cookie_max_age=3600,
-    cookie_secure=True,       # HTTPS only; set False *only* for local http://
-    cookie_httponly=True,     # JS can’t read it (safer)
-    cookie_samesite="none",   # cross-site because UI and API are on different domains
+    cookie_name="jwt",                 # <- matches Flask
+    cookie_domain=".onrender.com",     # <- shared for ui & api sub-domains
+    cookie_secure=True,                # Render is HTTPS
+    cookie_httponly=True,
+    cookie_samesite="lax",
 )
 auth_backend = AuthenticationBackend(
     name="jwt",
@@ -155,7 +155,11 @@ class SupplierOut(BaseModel):
     class Config:
         orm_mode = True
 
-
+@app.get("/wake_db", tags=["Meta"])
+def wake_db(db: Session = Depends(get_db)):
+    """Ping the DB so Neon’s sleeping instance wakes up."""
+    db.execute(text("SELECT 1"))
+    return {"status": "awake"}
 
 # Article models
 class ArticleCreate(BaseModel):
