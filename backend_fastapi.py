@@ -27,7 +27,7 @@ from typing import Optional, List
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 from passlib.context import CryptContext
-from fastapi import Depends
+from fastapi import Depends,APIRouter, Response, status
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import Header, Depends
 
@@ -107,10 +107,7 @@ app.include_router(
     prefix="/users",
     tags=["users"],
 )
-app.include_router(
-    fastapi_users.get_logout_router(auth_backend),
-    prefix="/auth/jwt",
-    tags=["auth"],
+
 )
 # Enable CORS for requests coming from your Flask frontend
 app.add_middleware(
@@ -131,6 +128,36 @@ def get_db():
         yield db
     finally:
         db.close()
+        ogout_router = APIRouter(tags=["auth"])
+
+
+
+logout_router = APIRouter(tags=["auth"])
+
+@logout_router.post("/auth/logout", status_code=status.HTTP_200_OK)
+def cookie_logout(response: Response):
+    """
+    Log the user out by clearing the JWT cookie.
+    """
+    response.delete_cookie(
+        key="jwt",
+        domain=".onrender.com",   # match whatever you set in CookieTransport
+        path="/",
+    )
+    return {"detail": "Logged out"}
+
+app.include_router(logout_router)
+@logout_router.post("/auth/logout", status_code=status.HTTP_200_OK)
+def cookie_logout(response: Response):
+    """
+    Log the user out by clearing the JWT cookie.
+    """
+    response.delete_cookie(
+        key="jwt",
+        domain=".onrender.com",   # match whatever you set in CookieTransport
+        path="/",
+    )
+    return {"detail": "Logged out"}
 
 
 # Supplier models
