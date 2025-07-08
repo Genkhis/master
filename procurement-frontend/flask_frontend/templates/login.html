@@ -25,29 +25,30 @@
 </div>
 {% endblock %}
 
+{% extends "base.html" %}
+
+{% block content %}
+…              {#  your login form markup – unchanged #}
+{% endblock %}
+
 {% block script %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-
-  /* -------- helpers & constants -------- */
+  /* helpers & constants */
   const $ = sel => document.querySelector(sel);
-
   const API     = "{{ API_URL }}";
-  const nextUrl = new URLSearchParams(location.search).get('next') ||
-                  "{{ url_for('index') }}";
+  const nextUrl = new URLSearchParams(location.search).get('next')
+                || "{{ url_for('index') }}";
 
   const form = $('#login-form');
-  if (!form) return;                       // sanity-check
+  if (!form) return;
 
-  /* -------- submit handler -------- */
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
-
     $('#login-spinner').classList.remove('d-none');
     $('#login-btn-text').textContent = 'Bitte warten …';
     $('#login-error').classList.add('d-none');
 
-    /* CookieTransport → url-encoded body */
     const body = new URLSearchParams({
       username: $('#email').value.trim(),
       password: $('#password').value.trim()
@@ -57,21 +58,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const resp = await fetch(`${API}/auth/jwt/login`, {
         method      : 'POST',
         mode        : 'cors',
-        credentials : 'include',          // send & accept cookies
+        credentials : 'include',
         headers     : { 'Content-Type': 'application/x-www-form-urlencoded' },
         body
       });
+      if (!resp.ok) throw new Error();
 
-      if (!resp.ok) throw new Error('auth-failed');    // 4xx/5xx
-
-      /* success (204) – cookie "jwt" is now stored */
+      /* 204 No Content — cookie “jwt” now set by backend */
       window.location.replace(nextUrl);
-
     } catch {
-      const errBox = $('#login-error');
-      errBox.textContent =
+      const box = $('#login-error');
+      box.textContent =
         'Login fehlgeschlagen – bitte E-Mail & Passwort prüfen.';
-      errBox.classList.remove('d-none');
+      box.classList.remove('d-none');
     } finally {
       $('#login-spinner').classList.add('d-none');
       $('#login-btn-text').textContent = 'Login';
@@ -80,4 +79,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 {% endblock %}
+
 
