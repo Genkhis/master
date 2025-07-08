@@ -108,7 +108,7 @@ app.include_router(
     tags=["users"],
 )
 
-)
+
 # Enable CORS for requests coming from your Flask frontend
 app.add_middleware(
     CORSMiddleware,
