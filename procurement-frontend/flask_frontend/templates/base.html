@@ -1,83 +1,33 @@
-{# templates/login.html #}
-{% extends "base.html" %}
+<!-- templates/base.html  (no extends here!) -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Beschaffungssystem{% endblock %}</title>
 
-{% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-4">
-        <h3 class="mb-3 text-center">Anmelden</h3>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+    {% block style %}{% endblock %}
+</head>
+<body>
+    {% block content %}{% endblock %}
 
-        <form id="login-form" autocomplete="off">
-            <div class="mb-3">
-                <input type="email" id="email" class="form-control"
-                       placeholder="E-Mail" required>
-            </div>
-            <div class="mb-3">
-                <input type="password" id="password" class="form-control"
-                       placeholder="Passwort" required>
-            </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-            <button class="btn btn-primary w-100" type="submit">
-                <span id="login-spinner"
-                      class="spinner-border spinner-border-sm d-none"></span>
-                <span id="login-btn-text">Login</span>
-            </button>
-        </form>
+    <!-- jQuery CDN + fallback (optional) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-JlXx1P7K8QVjtYT1DoP70uQgmO6ijLJrXP+KsrkPGCE="
+            crossorigin="anonymous"></script>
+    <script>
+      if (!window.jQuery) {
+        console.warn('jQuery CDN failed – loading local copy…');
+        document.write(
+          '<script src="{{ url_for("static", filename="js/jquery-3.7.1.min.js") }}"><\\/script>'
+        );
+      }
+    </script>
 
-        <div id="login-error" class="text-danger mt-3 d-none"></div>
-    </div>
-</div>
-{% endblock %}
-
-{% block script %}
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-
-  /* helpers & constants */
-  const $       = sel => document.querySelector(sel);
-  const API     = "{{ API_URL }}";
-  const nextUrl = new URLSearchParams(location.search).get('next')
-                || "{{ url_for('index') }}";
-
-  const form = $('#login-form');
-  if (!form) return;                          // safety-check
-
-  /* ---------- submit handler ---------- */
-  form.addEventListener('submit', async ev => {
-    ev.preventDefault();
-
-    $('#login-spinner').classList.remove('d-none');
-    $('#login-btn-text').textContent = 'Bitte warten …';
-    $('#login-error').classList.add('d-none');
-
-    /* CookieTransport → x-www-form-urlencoded */
-    const body = new URLSearchParams({
-      username: $('#email').value.trim(),
-      password: $('#password').value.trim()
-    });
-
-    try {
-      const resp = await fetch(`${API}/auth/jwt/login`, {
-        method      : 'POST',
-        mode        : 'cors',
-        credentials : 'include',   // send & receive cookies
-        headers     : { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body
-      });
-      if (!resp.ok) throw new Error();
-
-      /* 204 No Content → “jwt” cookie now set */
-      window.location.replace(nextUrl);
-
-    } catch {
-      const box = $('#login-error');
-      box.textContent =
-        'Login fehlgeschlagen – bitte E-Mail & Passwort prüfen.';
-      box.classList.remove('d-none');
-    } finally {
-      $('#login-spinner').classList.add('d-none');
-      $('#login-btn-text').textContent = 'Login';
-    }
-  });
-});
-</script>
-{% endblock %}
+    {% block script %}{% endblock %}
+</body>
+</html>
