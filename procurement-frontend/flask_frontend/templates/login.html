@@ -30,17 +30,12 @@
 {% block script %}
 <script>
 (() => {
-  /* ------------------------------------------------------------------
-   * 0) Wake the sleeping Neon instance in the background
-   * ----------------------------------------------------------------*/
-  const API = "{{ API_URL }}";
-  fetch(`${API}/wake_db`).catch(() => {});   // fire-and-forget
-
-  /* ------------------------------------------------------------------
-   * 1) Login handler
-   * ----------------------------------------------------------------*/
+  const API     = "{{ API_URL }}";
   const nextUrl = new URLSearchParams(location.search).get("next") ||
                   "{{ url_for('index') }}";
+
+  // optional: wake the Neon DB
+  fetch(`${API}/wake_db`).catch(() => {});
 
   $('#login-form').on('submit', e => {
     e.preventDefault();
@@ -52,18 +47,19 @@
     $.ajax({
       type        : "POST",
       url         : `${API}/auth/jwt/login`,
-      crossDomain : true,                       // allow cross-origin
-      xhrFields   : { withCredentials: true },  // send & accept cookies
-      contentType : "application/json",
-      data        : JSON.stringify({
-        username: $('#email').val().trim(),
-        password: $('#password').val().trim()
-      }),
-      success : () => window.location.replace(nextUrl),
-      error   : () => $('#login-error')
-                     .text('Login fehlgeschlagen – bitte prüfe E-Mail & Passwort.')
-                     .removeClass('d-none'),
-      complete: () => {
+      crossDomain : true,
+      xhrFields   : { withCredentials: true },     // accept Set-Cookie
+      /*  🔑 SEND AS FORM DATA (default jQuery behaviour) */
+      data        : {
+        username : $('#email').val().trim(),
+        password : $('#password').val().trim()
+      },
+      /*  FastAPI returns 204 No-Content; treat it as success              */
+      statusCode  : { 204: () => window.location.replace(nextUrl) },
+      error       : () => $('#login-error')
+                        .text('Login fehlgeschlagen – bitte prüfe E-Mail & Passwort.')
+                        .removeClass('d-none'),
+      complete    : () => {
         $('#login-spinner').addClass('d-none');
         $('#login-btn-text').text('Login');
       }
@@ -72,3 +68,4 @@
 })();
 </script>
 {% endblock %}
+
