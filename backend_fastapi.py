@@ -46,10 +46,9 @@ jwt_strategy = JWTStrategy(
 cookie_transport = CookieTransport(
     cookie_name="jwt",
     cookie_max_age=3600,
-    cookie_path="/",
-    cookie_domain=".onrender.com",   
+    cookie_domain=".onrender.com",
     cookie_secure=True,
-    cookie_samesite="lax",
+    cookie_samesite="none",   # cross-site cookie
 )
 auth_backend = AuthenticationBackend(
     name="jwt",
@@ -129,7 +128,6 @@ def get_db():
         yield db
     finally:
         db.close()
-        ogout_router = APIRouter(tags=["auth"])
 
 
 
