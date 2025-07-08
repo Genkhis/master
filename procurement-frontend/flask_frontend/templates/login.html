@@ -41,41 +41,51 @@
 
 {% block script %}
 <script>
-/*  vanilla JS – no jQuery dependency  */
-document.addEventListener('DOMContentLoaded', () => {
-  const $ = sel => document.querySelector(sel);
+/* ──────────────────────────────────────────────────────────────
+ * DEBUG fetch wrapper – prints request, response and cookies
+ * ──────────────────────────────────────────────────────────────*/
+async function dbgFetch(url, opts) {
+  console.groupCollapsed('[login] fetch', url);
+  console.log('request', opts);
+  const res = await fetch(url, opts);
+  console.log('status', res.status, res.statusText);
+  console.log('set-cookie header', res.headers.get('set-cookie'));
+  console.log('document.cookie AFTER response →', document.cookie);
+  console.groupEnd();
+  return res;
+}
+/* ──────────────────────────────────────────────────────────────*/
 
+document.addEventListener('DOMContentLoaded', () => {
+  const $       = sel => document.querySelector(sel);
   const API     = "{{ API_URL }}";
   const nextUrl = new URLSearchParams(location.search).get('next')
                 || "{{ url_for('index') }}";
 
-  const form = $('#login-form');
-  if (!form) return;                // safety
-
-  form.addEventListener('submit', async ev => {
+  $('#login-form')?.addEventListener('submit', async ev => {
     ev.preventDefault();
 
     $('#login-spinner').classList.remove('d-none');
     $('#login-btn-text').textContent = 'Bitte warten …';
     $('#login-error').classList.add('d-none');
 
-    /* CookieTransport expects x-www-form-urlencoded */
     const body = new URLSearchParams({
       username: $('#email').value.trim(),
       password: $('#password').value.trim()
     });
 
     try {
-      const resp = await fetch(`${API}/auth/jwt/login`, {
+      /* 👉 use dbgFetch instead of fetch */
+      const resp = await dbgFetch(`${API}/auth/jwt/login`, {
         method      : 'POST',
         mode        : 'cors',
-        credentials : 'include',   // send & receive cookies
+        credentials : 'include',
         headers     : { 'Content-Type': 'application/x-www-form-urlencoded' },
         body
       });
-      if (!resp.ok) throw new Error();
+      if (!resp.ok) throw new Error('auth-failed');
 
-      /* 204 No Content → cookie “jwt” set */
+      /* backend sets cookie → go on */
       window.location.replace(nextUrl);
 
     } catch {
@@ -91,3 +101,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 {% endblock %}
+

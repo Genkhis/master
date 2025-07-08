@@ -44,12 +44,13 @@ jwt_strategy = JWTStrategy(
 )
 
 cookie_transport = CookieTransport(
-    cookie_name="jwt",
-    cookie_max_age=3600,
-    cookie_domain="onrender.com",
-    cookie_secure=True,           
-    cookie_samesite="none",       
+    cookie_name    = "jwt",
+    cookie_max_age = 3600,
+    cookie_domain  = ".onrender.com",   # leading dot → works for sub-domains
+    cookie_secure  = True,
+    cookie_samesite= "none",            # must be "none" when Secure + cross-site
 )
+
 auth_backend = AuthenticationBackend(
     name="jwt",
     transport=cookie_transport,
@@ -109,17 +110,12 @@ app.include_router(
 )
 
 
-# Enable CORS for requests coming from your Flask frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://procurement-ui.onrender.com",   #  ← add this
-        "http://localhost:5000",                 #  dev
-        # any other origins you need…
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins      = ["https://procurement-ui.onrender.com"],
+    allow_credentials  = True,
+    allow_methods      = ["*"],
+    allow_headers      = ["*"],
 )
 
 def get_db():

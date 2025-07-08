@@ -5,6 +5,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import os, requests, jwt, datetime
 from functools import wraps
+import logging
+
 
 # ───────────────────────────
 # Flask setup
@@ -37,6 +39,10 @@ JWT_SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
 def inject_api_url():
     return {"API_URL": app.config["API_URL"]}
 
+
+log = logging.getLogger("login-guard")
+log.setLevel(logging.INFO)
+
 # ───────────────────────────
 # Auth helper & guard
 # ───────────────────────────
@@ -45,18 +51,23 @@ EXEMPT_ENDPOINTS = {
 }
 
 def _current_user():
-    """Return True if a valid JWT is present, else False."""
+    """Return True if a valid JWT is present, else False (and log why)."""
     token = (
         request.cookies.get("jwt") or
         request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
     )
+    log.info("PATH=%s  jwt-cookie-present=%s", request.path, bool(request.cookies.get("jwt")))
     if not token:
+        log.info("→ no token found ⇒ unauthenticated")
         return False
     try:
         jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        log.info("→ token valid")
         return True
-    except jwt.PyJWTError:
+    except jwt.PyJWTError as e:
+        log.info("→ token INVALID: %s", e)
         return False
+
 
 @app.before_request
 def login_guard():
