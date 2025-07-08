@@ -1,35 +1,46 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- unchanged form markup -->
 <div class="row justify-content-center mt-5">
     <div class="col-md-4">
         <h3 class="mb-3 text-center">Anmelden</h3>
+
         <form id="login-form" autocomplete="off">
             <div class="mb-3">
-                <input type="email" class="form-control" id="email" placeholder="E-Mail" required>
+                <input type="email" class="form-control" id="email"
+                       placeholder="E-Mail" required>
             </div>
             <div class="mb-3">
-                <input type="password" class="form-control" id="password" placeholder="Passwort" required>
+                <input type="password" class="form-control" id="password"
+                       placeholder="Passwort" required>
             </div>
+
             <button class="btn btn-primary w-100" type="submit">
-                <span id="login-spinner" class="spinner-border spinner-border-sm d-none"></span>
+                <span id="login-spinner"
+                      class="spinner-border spinner-border-sm d-none"></span>
                 <span id="login-btn-text">Login</span>
             </button>
         </form>
+
         <div id="login-error" class="text-danger mt-3 d-none"></div>
     </div>
 </div>
 {% endblock %}
 
 {% block script %}
-<!-- 🛑 delete the duplicate jQuery tag; rely on base.html -->
-
 <script>
 (() => {
-  const API     = "{{ API_URL }}";
-  const nextUrl = new URLSearchParams(location.search).get("next")
-                || "{{ url_for('index') }}";
+  /* ------------------------------------------------------------------
+   * 0) Wake the sleeping Neon instance in the background
+   * ----------------------------------------------------------------*/
+  const API = "{{ API_URL }}";
+  fetch(`${API}/wake_db`).catch(() => {});   // fire-and-forget
+
+  /* ------------------------------------------------------------------
+   * 1) Login handler
+   * ----------------------------------------------------------------*/
+  const nextUrl = new URLSearchParams(location.search).get("next") ||
+                  "{{ url_for('index') }}";
 
   $('#login-form').on('submit', e => {
     e.preventDefault();
@@ -41,15 +52,15 @@
     $.ajax({
       type        : "POST",
       url         : `${API}/auth/jwt/login`,
-      crossDomain : true,
-      xhrFields   : { withCredentials: true },   // send & accept cookies
+      crossDomain : true,                       // allow cross-origin
+      xhrFields   : { withCredentials: true },  // send & accept cookies
       contentType : "application/json",
       data        : JSON.stringify({
-        username : $('#email').val().trim(),
-        password : $('#password').val().trim()
+        username: $('#email').val().trim(),
+        password: $('#password').val().trim()
       }),
-      success: () => window.location.replace(nextUrl),
-      error  : () => $('#login-error')
+      success : () => window.location.replace(nextUrl),
+      error   : () => $('#login-error')
                      .text('Login fehlgeschlagen – bitte prüfe E-Mail & Passwort.')
                      .removeClass('d-none'),
       complete: () => {
