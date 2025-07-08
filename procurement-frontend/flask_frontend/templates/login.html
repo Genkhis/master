@@ -30,47 +30,51 @@
 {% block script %}
 <script>
 (() => {
-  const API     = "{{ API_URL }}";
-  const nextUrl = new URLSearchParams(location.search).get("next")
-                || "{{ url_for('index') }}";
+  const $   = selector => document.querySelector(selector);
+  const API = "{{ API_URL }}";
+  const nextUrl =
+        new URLSearchParams(location.search).get('next') ||
+        "{{ url_for('index') }}";
 
-  $('#login-form').on('submit', e => {
+  $('#login-form').addEventListener('submit', async e => {
     e.preventDefault();
+    $('#login-spinner').classList.remove('d-none');
+    $('#login-btn-text').textContent = 'Bitte warten …';
+    $('#login-error').classList.add('d-none');
 
-    $('#login-spinner').removeClass('d-none');
-    $('#login-btn-text').text('Bitte warten …');
-    $('#login-error').addClass('d-none');
-
-    $.ajax({
-      type        : "POST",
-      url         : `${API}/auth/jwt/login`,
-      crossDomain : true,
-      xhrFields   : { withCredentials: true },
-      contentType : "application/json",
-      data        : JSON.stringify({
-        username : $('#email').val().trim(),
-        password : $('#password').val().trim()
-      }),
-
-      /*  👇 HERE: copy the token to the UI domain  */
-      success: data => {
-        /* API returns: { "access_token": "…" } */
-        document.cookie = `jwt=${data.access_token}; Path=/; SameSite=Lax;`;
-        window.location.replace(nextUrl);
-      },
-
-      error: () => $('#login-error')
-                   .text('Login fehlgeschlagen – bitte prüfe E-Mail & Passwort.')
-                   .removeClass('d-none'),
-
-      complete: () => {
-        $('#login-spinner').addClass('d-none');
-        $('#login-btn-text').text('Login');
-      }
+    const body = JSON.stringify({
+      username: $('#email').value.trim(),
+      password: $('#password').value.trim()
     });
+
+    try {
+      const r = await fetch(`${API}/auth/jwt/login`, {
+        method      : 'POST',
+        mode        : 'cors',
+        credentials : 'include',            // ← send & accept cookies
+        headers     : { 'Content-Type': 'application/json' },
+        body
+      });
+
+      if (!r.ok) throw new Error('auth-failed');
+
+      const { access_token } = await r.json();
+      document.cookie = `jwt=${access_token}; Path=/; SameSite=Lax;`;
+      window.location.replace(nextUrl);
+
+    } catch (err) {
+      $('#login-error').textContent =
+        'Login fehlgeschlagen – bitte prüfe E-Mail & Passwort.';
+      $('#login-error').classList.remove('d-none');
+    } finally {
+      $('#login-spinner').classList.add('d-none');
+      $('#login-btn-text').textContent = 'Login';
+    }
   });
 })();
 </script>
-
 {% endblock %}
+
+
+
 
