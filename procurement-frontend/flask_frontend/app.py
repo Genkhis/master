@@ -139,8 +139,7 @@ def all_articles():
 
 
 def _token_from_browser() -> str | None:
-    """Return the JWT we stored in document.cookie (may be None)."""
-    return request.cookies.get("token")
+    return request.cookies.get("jwt") 
 
 def _api_get(path: str, *, token: str | None = None):
     hdrs = {"Authorization": f"Bearer {token}"} if token else {}
@@ -150,9 +149,7 @@ def _api_post(path: str, *, json: dict | None = None, token: str | None = None):
     hdrs = {"Authorization": f"Bearer {token}"} if token else {}
     return requests.post(f"{BASE_API_URL}{path}", json=json, headers=hdrs)
 
-# inside a view
-token = _token_from_browser()
-resp  = _api_get("/articles/", token=token)
+
 
 # ────────── Add Article
 @app.route("/add_article", methods=["GET", "POST"])
