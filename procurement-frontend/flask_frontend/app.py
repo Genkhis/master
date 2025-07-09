@@ -39,7 +39,9 @@ JWT_SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
 @app.context_processor
 def inject_api_url():
     return {"API_URL": app.config["API_URL"]}
-
+@app.context_processor
+def inject_login_state():
+    return {"is_logged_in": _current_user()}
 
 log = logging.getLogger("login-guard")
 log.setLevel(logging.INFO)
@@ -48,9 +50,23 @@ log.setLevel(logging.INFO)
 # Auth helper & guard
 # ───────────────────────────
 EXEMPT_ENDPOINTS = {
-    "login", "static", "favicon",        # public pages/assets
+    "login", "static", "favicon",        
 }
 
+@app.before_request
+def require_login_for_protected_pages():
+    # 1.  Let public stuff pass through
+    if request.endpoint in EXEMPT_ENDPOINTS:
+        return                      # allowed
+
+    # 2.  Logged-in?  → allow
+    if _current_user():
+        return
+
+    # 3.  Otherwise bounce to /login, preserving target
+    next_url = request.full_path.rstrip("?")  # keeps query string
+    login_url = url_for("login", next=next_url, _external=False)
+    return redirect(login_url)
 def _current_user():
     """Return True if a valid JWT is present, else False (and log why)."""
     token = (
