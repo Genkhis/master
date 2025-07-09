@@ -1,5 +1,5 @@
 {# ------------------------------------------------------------------------
-   Login page — extends the base layout above
+   Login page — extends the base layout
 ------------------------------------------------------------------------ #}
 {% extends "base.html" %}
 
@@ -37,46 +37,52 @@
         <div id="login-error" class="text-danger mt-3 d-none"></div>
     </div>
 </div>
+{% endblock %}
+
 {% block script %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const $      = sel => document.querySelector(sel);
-  const API    = "{{ API_URL }}";
-  const next   = new URLSearchParams(location.search).get('next')
-               || "{{ url_for('index') }}";
+  const $   = s => document.querySelector(s);
+  const API = '{{ API_URL }}';
+  const nextUrl = new URLSearchParams(location.search).get('next')
+               || '{{ url_for("index") }}';
 
   $('#login-form')?.addEventListener('submit', async ev => {
     ev.preventDefault();
+
     $('#login-spinner').classList.remove('d-none');
     $('#login-btn-text').textContent = 'Bitte warten …';
     $('#login-error').classList.add('d-none');
 
+    /* BearerTransport expects x-www-form-urlencoded */
     const body = new URLSearchParams({
       username: $('#email').value.trim(),
-      password: $('#password').value.trim()
+      password: $('#password').value.trim(),
     });
 
     try {
-      const res = await fetch(`${API}/auth/jwt/login`, {
-        method      : 'POST',
-        credentials : 'omit',                        // BearerTransport → no cookies
-        headers     : {'Content-Type':'application/x-www-form-urlencoded'},
-        body
+      const resp = await fetch(`${API}/auth/jwt/login`, {
+        method: 'POST',
+        credentials: 'omit',                // BearerTransport → no cookies
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
       });
-      if (!res.ok) throw new Error('auth');
+      if (!resp.ok) throw new Error('auth');
 
-      /* JSON:  { access_token:"…", token_type:"bearer" } */
-      const { access_token } = await res.json();
+      /* backend returns JSON:  {access_token:"...", token_type:"bearer"} */
+      const { access_token } = await resp.json();
 
-      /* put it where the Flask guard expects it */
-      document.cookie = `jwt=${access_token}; Path=/; SameSite=Lax`;
+      /* store token where Flask guard looks for it */
+      document.cookie =
+        `jwt=${access_token}; Path=/; SameSite=Lax; Secure`;   // ← essential
 
-      window.location.replace(next);
+      window.location.replace(nextUrl);
 
     } catch {
-      $('#login-error').textContent =
-          'Login fehlgeschlagen – bitte E-Mail & Passwort prüfen.';
-      $('#login-error').classList.remove('d-none');
+      const box = $('#login-error');
+      box.textContent =
+        'Login fehlgeschlagen – bitte E-Mail & Passwort prüfen.';
+      box.classList.remove('d-none');
     } finally {
       $('#login-spinner').classList.add('d-none');
       $('#login-btn-text').textContent = 'Login';
@@ -85,4 +91,3 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 {% endblock %}
-

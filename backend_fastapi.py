@@ -107,10 +107,13 @@ app.include_router(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins      = ["https://procurement-ui.onrender.com"],
-    allow_credentials  = True,
-    allow_methods      = ["*"],
-    allow_headers      = ["*"],
+    allow_origins = [
+        "https://procurement-ui.onrender.com",   # production
+        "http://localhost:5000",                 # local dev (optional)
+    ],
+    allow_credentials = True,
+    allow_methods     = ["*"],
+    allow_headers     = ["*"],
 )
 
 def get_db():

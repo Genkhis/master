@@ -30,6 +30,7 @@ db       = SQLAlchemy(app)
 migrate  = Migrate(app, db)
 
 BASE_API_URL = os.getenv("API_URL", "http://127.0.0.1:8001")
+API_TIMEOUT  = 8          # seconds       ← NEW
 app.config["API_URL"] = BASE_API_URL
 
 JWT_SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
@@ -143,11 +144,25 @@ def _token_from_browser() -> str | None:
 
 def _api_get(path: str, *, token: str | None = None):
     hdrs = {"Authorization": f"Bearer {token}"} if token else {}
-    return requests.get(f"{BASE_API_URL}{path}", headers=hdrs)
+    try:
+        return requests.get(f"{BASE_API_URL}{path}",
+                            headers=hdrs, timeout=API_TIMEOUT)
+    except requests.Timeout:
+        app.logger.warning("API timeout for %s", path)
+        return _dummy_response(504, "Gateway Timeout")
+    except requests.RequestException as exc:
+        app.logger.error("API error for %s → %s", path, exc)
+        return _dummy_response(502, "Bad Gateway")
 
 def _api_post(path: str, *, json: dict | None = None, token: str | None = None):
     hdrs = {"Authorization": f"Bearer {token}"} if token else {}
-    return requests.post(f"{BASE_API_URL}{path}", json=json, headers=hdrs)
+    try:
+        return requests.post(f"{BASE_API_URL}{path}", json=json,
+                             headers=hdrs, timeout=API_TIMEOUT)
+    except requests.Timeout:
+        return _dummy_response(504, "Gateway Timeout")
+    except requests.RequestException:
+        return _dummy_response(502, "Bad Gateway")
 
 
 
