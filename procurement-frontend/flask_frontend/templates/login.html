@@ -54,7 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#login-btn-text').textContent = 'Bitte warten …';
     $('#login-error').classList.add('d-none');
 
-    /* BearerTransport expects x-www-form-urlencoded */
     const body = new URLSearchParams({
       username: $('#email').value.trim(),
       password: $('#password').value.trim(),
@@ -63,18 +62,17 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const resp = await fetch(`${API}/auth/jwt/login`, {
         method: 'POST',
-        credentials: 'omit',                // BearerTransport → no cookies
+        credentials: 'omit',                    
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body,
       });
       if (!resp.ok) throw new Error('auth');
 
-      /* backend returns JSON:  {access_token:"...", token_type:"bearer"} */
       const { access_token } = await resp.json();
 
-      /* store token where Flask guard looks for it */
+      /* store token where Flask expects it */
       document.cookie =
-        `jwt=${access_token}; Path=/; SameSite=Lax; Secure`;   // ← essential
+        `bearer=${access_token}; Path=/; SameSite=Lax; Secure`;
 
       window.location.replace(nextUrl);
 
@@ -91,3 +89,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 {% endblock %}
+
