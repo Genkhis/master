@@ -59,25 +59,33 @@
 
     <!-- ───── universal logout logic ───── -->
     <script>
-  (() => {
-    const API = "{{ API_URL }}";                 // injected via context-processor
+(() => {
+  const btn = document.getElementById('logout-btn');
+  if (!btn) return;
 
-    document.getElementById('logout-btn')?.addEventListener('click', async () => {
-      /* 1) ask backend to delete its HTTP-only cookie (ignore errors) */
-      try {
-        await fetch(`${API}/auth/logout`, {
-          method: 'POST',
-          credentials: 'include'
-        });
-      } catch (_) {}
+  function hasJwt() {
+    return document.cookie.split(';')
+             .some(c => c.trim().startsWith('jwt='));
+  }
 
-      /* 2) drop the JWT cookie used by the Flask guard */
-      document.cookie = "jwt=; Path=/; Max-Age=0; SameSite=Lax";
+  // show / hide on initial render
+  btn.classList.toggle('d-none', !hasJwt());
 
-      /* 3) back to the login screen */
-      window.location.replace("{{ url_for('login') }}");
-    });
-  })();
+  btn.addEventListener('click', () => {
+    /* 1 – client-side “logout”: drop the token */
+    document.cookie = 'jwt=; Path=/; Max-Age=0; SameSite=Lax';
+
+    /* 2 – optional: tell backend to forget refresh-tokens, sessions, …
+           If you have no such endpoint, just comment the block out. */
+    fetch('{{ API_URL }}/auth/logout', { method:'POST', credentials:'include' })
+      .catch(() => {/* ignore 404 or network errors */});
+
+    /* 3 – UI update */
+    btn.classList.add('d-none');
+    window.location.replace('{{ url_for("login") }}');
+  });
+})();
     </script>
+
 </body>
 </html>

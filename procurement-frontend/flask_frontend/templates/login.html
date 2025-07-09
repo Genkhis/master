@@ -37,16 +37,15 @@
         <div id="login-error" class="text-danger mt-3 d-none"></div>
     </div>
 </div>
-{% endblock %}
-
+{% block script %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const $ = s => document.querySelector(s);
-  const API = "{{ API_URL }}";
-  const nextUrl = new URLSearchParams(location.search).get('next') ||
-                  "{{ url_for('index') }}";
+  const $      = sel => document.querySelector(sel);
+  const API    = "{{ API_URL }}";
+  const next   = new URLSearchParams(location.search).get('next')
+               || "{{ url_for('index') }}";
 
-  $('#login-form').addEventListener('submit', async ev => {
+  $('#login-form')?.addEventListener('submit', async ev => {
     ev.preventDefault();
     $('#login-spinner').classList.remove('d-none');
     $('#login-btn-text').textContent = 'Bitte warten …';
@@ -58,23 +57,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     try {
-      const r = await fetch(`${API}/auth/jwt/login`, {
-        method : 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      const res = await fetch(`${API}/auth/jwt/login`, {
+        method      : 'POST',
+        credentials : 'omit',                        // BearerTransport → no cookies
+        headers     : {'Content-Type':'application/x-www-form-urlencoded'},
+        body
       });
-      if (!r.ok) throw new Error('auth-fail');
+      if (!res.ok) throw new Error('auth');
 
-      const { access_token } = await r.json();   // FastAPI returns JSON now
-      // 1) stash in localStorage
-      localStorage.setItem('jwt', access_token);
-      // 2) optional: expose to Flask handlers (server ↔ browser)
-      document.cookie = `token=${access_token}; Path=/`;
+      /* JSON:  { access_token:"…", token_type:"bearer" } */
+      const { access_token } = await res.json();
 
-      window.location.replace(nextUrl);
+      /* put it where the Flask guard expects it */
+      document.cookie = `jwt=${access_token}; Path=/; SameSite=Lax`;
+
+      window.location.replace(next);
 
     } catch {
       $('#login-error').textContent =
-        'Login fehlgeschlagen – bitte E-Mail & Passwort prüfen.';
+          'Login fehlgeschlagen – bitte E-Mail & Passwort prüfen.';
       $('#login-error').classList.remove('d-none');
     } finally {
       $('#login-spinner').classList.add('d-none');
@@ -83,6 +84,5 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
-
-
+{% endblock %}
 
