@@ -6,6 +6,8 @@ from flask_migrate import Migrate
 import os, requests, jwt, datetime
 from functools import wraps
 import logging
+from types import SimpleNamespace
+
 
 
 # ───────────────────────────
@@ -70,10 +72,12 @@ def require_login_for_protected_pages():
 def _current_user():
     """Return True if a valid JWT is present, else False (and log why)."""
     token = (
-        request.cookies.get("jwt") or
-        request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+        request.cookies.get("bearer") or                    # ← renamed
+        request.headers.get("Authorization", "")
+               .removeprefix("Bearer ").strip()
     )
-    log.info("PATH=%s  cookie-present=%s", request.path, bool(request.cookies.get("jwt")))
+    log.info("PATH=%s  cookie-present=%s",
+             request.path, bool(request.cookies.get("bearer")))  # ← renamed
     if not token:
         log.info("→ no token")
         return False
@@ -123,9 +127,23 @@ def index():
 
     return render_template("index.html", articles=articles)
 
-# All articles (search + filters)
+
+def _dummy_response(code: int, text: str):
+    """Return an object that looks like a `requests.Response` but is static."""
+    return SimpleNamespace(
+        ok         = False,
+        status_code= code,
+        text       = text,
+        json       = lambda: {},   # empty JSON payload
+    )
+
+
+
 @app.route("/all_articles", methods=["GET", "POST"])
 def all_articles():
+    # 0) pick up the JWT (None when the guard let an anonymous user through)
+    token = _token_from_browser()
+
     if request.method == "POST":
         queries, fields = _extract_filter_lists(request.form)
     else:
@@ -135,14 +153,16 @@ def all_articles():
 
     filter_pairs = list(zip(queries, fields))
 
-    if not filter_pairs:
-        resp = requests.get(f"{BASE_API_URL}/articles/")
-    elif len(filter_pairs) == 1:
+    if not filter_pairs:                               
+        resp = _api_get("/articles/", token=token)
+
+    elif len(filter_pairs) == 1:                      
         q, f = filter_pairs[0]
-        resp = requests.get(f"{BASE_API_URL}/articles/?query={q}&filter_by={f}")
-    else:
+        resp = _api_get(f"/articles/?query={q}&filter_by={f}", token=token)
+
+    else:                                              
         payload = [{"query": q, "field": f} for q, f in filter_pairs]
-        resp = requests.post(f"{BASE_API_URL}/articles/advanced", json=payload)
+        resp = _api_post("/articles/advanced", json=payload, token=token)
 
     articles = resp.json() if resp.ok else []
     if not resp.ok:
@@ -155,8 +175,9 @@ def all_articles():
     )
 
 
+
 def _token_from_browser() -> str | None:
-    return request.cookies.get("jwt") 
+    return request.cookies.get("bearer") 
 
 def _api_get(path: str, *, token: str | None = None):
     hdrs = {"Authorization": f"Bearer {token}"} if token else {}
