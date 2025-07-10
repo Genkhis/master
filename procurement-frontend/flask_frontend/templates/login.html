@@ -6,17 +6,22 @@
 {% block title %}Login – Beschaffungssystem{% endblock %}
 
 {% block style %}
+<!-- Page-local favicon brute-force -->
+<link rel="icon" type="image/png"
+      href="{{ url_for('static', filename='images/favicon-32.png') }}">
+<link rel="shortcut icon" type="image/png"
+      href="{{ url_for('static', filename='images/favicon-32.png') }}">
+
 <style>
     /* Responsive logo size */
     .login-logo {
-        max-width: 220px; 
+        max-width: 220px;
     }
 
     @media (max-width: 575.98px) {
         .login-logo {
             max-width: 160px;
         }
-        /* phones */
     }
 </style>
 {% endblock %}
@@ -35,19 +40,13 @@
 
         <form id="login-form" autocomplete="off" novalidate>
             <div class="mb-3">
-                <input type="email"
-                       id="email"
-                       class="form-control"
-                       placeholder="E-Mail"
-                       required>
+                <input type="email" id="email" class="form-control"
+                       placeholder="E-Mail" required>
             </div>
 
             <div class="mb-3">
-                <input type="password"
-                       id="password"
-                       class="form-control"
-                       placeholder="Passwort"
-                       required>
+                <input type="password" id="password" class="form-control"
+                       placeholder="Passwort" required>
             </div>
 
             <button class="btn btn-primary w-100" type="submit">
@@ -77,7 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#login-btn-text').textContent = 'Bitte warten …';
     $('#login-error').classList.add('d-none');
 
-    /* BearerTransport expects x-www-form-urlencoded body */
     const body = new URLSearchParams({
       username: $('#email').value.trim(),
       password: $('#password').value.trim(),
@@ -92,12 +90,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       if (!resp.ok) throw new Error('auth');
 
-      /* backend returns: { access_token: "...", token_type: "bearer" } */
       const { access_token } = await resp.json();
-
-      /* Store token where Flask guard expects it */
       document.cookie = `bearer=${access_token}; Path=/; SameSite=Lax; Secure`;
-
       window.location.replace(nextUrl);
     } catch {
       const box = $('#login-error');
