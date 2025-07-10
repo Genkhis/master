@@ -1,9 +1,25 @@
-{# ------------------------------------------------------------------------
+{# --------------------------------------------------------------------
    Login page — extends the base layout
------------------------------------------------------------------------- #}
+-------------------------------------------------------------------- #}
 {% extends "base.html" %}
 
 {% block title %}Login – Beschaffungssystem{% endblock %}
+
+{% block style %}
+<style>
+    /* Responsive logo size */
+    .login-logo {
+        max-width: 220px; /* default ≥ 576 px */
+    }
+
+    @media (max-width: 575.98px) {
+        .login-logo {
+            max-width: 160px;
+        }
+        /* phones */
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center mt-5">
@@ -11,9 +27,9 @@
     <div class="text-center mb-4">
         <img src="{{ url_for('static', filename='images/logo-full.png') }}"
              alt="Firmenlogo"
-             class="img-fluid"
-             style="max-width: 140px;">
+             class="img-fluid login-logo">
     </div>
+
     <div class="col-md-4">
         <h3 class="mb-3 text-center">Anmelden</h3>
 
@@ -49,11 +65,11 @@
 {% block script %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const $      = sel => document.querySelector(sel);
-  const API    = '{{ API_URL }}';
+  const $ = sel => document.querySelector(sel);
+  const API = '{{ API_URL }}';
   const nextUrl = new URLSearchParams(location.search).get('next')
                 || '{{ url_for("index") }}';
-$(
+
   $('#login-form')?.addEventListener('submit', async ev => {
     ev.preventDefault();
 
