@@ -2,10 +2,14 @@
 from sqlalchemy import create_engine, or_, func, text
 from sqlalchemy.orm import sessionmaker, Session, joinedload
 from models import Article, Supplier, ArticlePrice, User, Role
-from pydantic import BaseModel, Field     
+from pydantic import BaseModel, Field, EmailStr   
 from datetime import date
 import os
+from fastapi_users import models as fa_models
+from fastapi_users import exceptions as fa_exc
+from fastapi_users import depends as fa_dep
 from fastapi_users import FastAPIUsers
+from fastapi import Depends, HTTPException, status
 from db_adapter import get_user_db
 import pandas as pd
 from managers import get_user_manager
@@ -322,7 +326,15 @@ def add_article(payload: ArticleCreate, db: Session = Depends(get_db)):
     return {"message": "article added successfully", "article_id": art.article_id}
 
 
-
+def superuser_required(
+        current_user = Depends(current_active_user)):
+    """Dependency that allows only super-users."""
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Superuser privileges required"
+        )
+    return current_user
 # Get Article Endpoint
 @app.get("/get_article/{article_id}", tags=["Articles"])
 def get_article(article_id: int, db: Session = Depends(get_db)):
@@ -961,6 +973,20 @@ def get_supplier(supplier_number: str, db: Session = Depends(get_db)):
     if not supplier:
         raise HTTPException(status_code=404, detail="Supplier not found")
     return supplier
+
+class UserAdminCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=6)
+    is_active: bool = True
+    is_superuser: bool = False
+    is_verified: bool = False
+
+class UserAdminPatch(BaseModel):
+    email: Optional[EmailStr] = None
+    password: Optional[str] = Field(default=None, min_length=6)
+    is_active: Optional[bool] = None
+    is_superuser: Optional[bool] = None
+    is_verified: Optional[bool] = None
 
 
 @app.get("/health", tags=["Meta"])

@@ -439,7 +439,22 @@ def kalkulation():
 @app.route("/controlling")
 def controlling():
     return render_template("controlling.html")
+def is_super():
+    token = request.cookies.get("bearer")
+    if not token:
+        return False
+    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+    return payload.get("is_superuser", False)
 
+@app.route("/users")
+def users():
+    if not is_super(): return abort(403)
+    return render_template("users.html")
+
+@app.route("/users/create")
+def users_create():
+    if not is_super(): return abort(403)
+    return render_template("user_create.html")
 # ------------------------------------------------------------------
 # Run locally or via gunicorn
 # ------------------------------------------------------------------

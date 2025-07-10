@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% set edit_mode = request.args.get('id') %}
+{% block title %}{{ "Benutzer bearbeiten" if edit_mode else "Neuer Benutzer" }}{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">{{ "Benutzer bearbeiten" if edit_mode else "Neuer Benutzer" }}</h3>
+
+<form id="user-form" class="col-md-4">
+    <div class="mb-3">
+        <label class="form-label">E-Mail</label>
+        <input id="email" type="email" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Passwort</label>
+        <input id="password" type="password" class="form-control" {{ "" if edit_mode else "required" }}>
+    </div>
+    <div class="form-check mb-3">
+        <input id="super" class="form-check-input" type="checkbox">
+        <label class="form-check-label">Superuser</label>
+    </div>
+
+    <button class="btn btn-primary">Speichern</button>
+</form>
+{% endblock %}
+
+{% block script %}
+<script>
+const id = new URLSearchParams(location.search).get('id');
+if (id) { // edit – prefill
+  fetch(`{{ API_URL }}/admin/users/${id}`, { headers: authHeader() })
+    .then(r => r.json())
+    .then(u => {
+      $('#email').value     = u.email;
+      $('#super').checked   = u.is_superuser;
+    });
+}
+
+document.querySelector('#user-form').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const payload = {
+    email: $('#email').value.trim(),
+    password: $('#password').value.trim() || undefined,
+    is_superuser: $('#super').checked
+  };
+  const method = id ? 'PATCH' : 'POST';
+  const url    = id ? `{{ API_URL }}/admin/users/${id}` : '{{ API_URL }}/admin/users';
+  fetch(url, {
+    method, headers: { ...authHeader(), 'Content-Type':'application/json' },
+    body: JSON.stringify(payload)
+  }).then(r => {
+    if (!r.ok) return alert('Fehler!');
+    location.href = '{{ url_for("users") }}';
+  });
+});
+</script>
+{% endblock %}
