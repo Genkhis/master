@@ -1,4 +1,4 @@
-{#  templates/base.html  ################################################### #}
+{# templates/base.html ################################################ #}
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -19,7 +19,9 @@
     <!-- ───── global navbar ───── -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">Beschaffungssystem</a>
+            <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
+                Beschaffungssystem
+            </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                     data-bs-target="#mainNav" aria-controls="mainNav"
@@ -29,21 +31,33 @@
 
             <div class="collapse navbar-collapse" id="mainNav">
                 <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
-
+                    {# ——— links visible only when logged-in ——— #}
+                    {% if is_logged_in %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('suppliers') }}">Lieferanten</a>
+                        <a class="nav-link" href="{{ url_for('suppliers') }}">
+                            Lieferanten
+                        </a>
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('upload_excel') }}">Excel hochladen</a>
+                        <a class="nav-link" href="{{ url_for('upload_excel') }}">
+                            Excel hochladen
+                        </a>
                     </li>
 
-                    <!-- logout is always shown; you could hide it until a JWT exists -->
                     <li class="nav-item ms-lg-3">
-                        <button id="logout-btn" class="btn btn-outline-danger btn-sm">
+                        <button id="logout-btn"
+                                class="btn btn-outline-danger btn-sm">
                             <i class="bi bi-box-arrow-right me-1"></i> Logout
                         </button>
                     </li>
+                    {% else %}
+                    {# optional: simple login button when not authenticated #}
+                    <li class="nav-item ms-lg-3">
+                        <a class="btn btn-primary btn-sm"
+                           href="{{ url_for('login') }}">Login</a>
+                    </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
@@ -63,29 +77,25 @@
   const btn = document.getElementById('logout-btn');
   if (!btn) return;
 
-  function hasJwt() {
+  function hasJwt () {
     return document.cookie.split(';')
-             .some(c => c.trim().startsWith('jwt='));
+             .some(c => c.trim().startsWith('bearer='));   // ← cookie renamed
   }
 
   // show / hide on initial render
   btn.classList.toggle('d-none', !hasJwt());
 
   btn.addEventListener('click', () => {
-    /* 1 – client-side “logout”: drop the token */
-    document.cookie = 'jwt=; Path=/; Max-Age=0; SameSite=Lax';
+    /* 1 – client-side logout: drop the token */
+    document.cookie = 'bearer=; Path=/; Max-Age=0; SameSite=Lax; Secure';
 
-    /* 2 – optional: tell backend to forget refresh-tokens, sessions, …
-           If you have no such endpoint, just comment the block out. */
-    fetch('{{ API_URL }}/auth/logout', { method:'POST', credentials:'include' })
-      .catch(() => {/* ignore 404 or network errors */});
+    /* 2 – optional: ping backend logout endpoint (ignore errors) */
+    fetch('{{ API_URL }}/auth/logout', { method: 'POST' }).catch(() => {});
 
-    /* 3 – UI update */
-    btn.classList.add('d-none');
+    /* 3 – redirect to login */
     window.location.replace('{{ url_for("login") }}');
   });
 })();
     </script>
-
 </body>
 </html>
