@@ -55,6 +55,14 @@ EXEMPT_ENDPOINTS = {
     "login", "static", "favicon",        
 }
 
+@app.context_processor
+def inject_flags():
+    return dict(
+        is_logged_in=bool(request.cookies.get("bearer")),
+        is_superuser=is_super(),      # your helper from earlier
+    )
+
+
 @app.before_request
 def require_login_for_protected_pages():
     # 1.  Let public stuff pass through
