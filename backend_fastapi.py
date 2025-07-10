@@ -7,7 +7,6 @@ from datetime import date
 import os
 from fastapi_users import models as fa_models
 from fastapi_users import exceptions as fa_exc
-from fastapi_users import depends as fa_dep
 from fastapi_users import FastAPIUsers
 from fastapi import Depends, HTTPException, status
 from db_adapter import get_user_db
@@ -325,16 +324,16 @@ def add_article(payload: ArticleCreate, db: Session = Depends(get_db)):
 
     return {"message": "article added successfully", "article_id": art.article_id}
 
+current_active_user = fastapi_users.current_user(active=True)
 
 def superuser_required(
-        current_user = Depends(current_active_user)):
-    """Dependency that allows only super-users."""
-    if not current_user.is_superuser:
+        user = Depends(current_active_user)):         # ← use the helper
+    if not user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Superuser privileges required"
+            detail="Superuser privileges required",
         )
-    return current_user
+    return user
 # Get Article Endpoint
 @app.get("/get_article/{article_id}", tags=["Articles"])
 def get_article(article_id: int, db: Session = Depends(get_db)):
