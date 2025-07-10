@@ -2,13 +2,13 @@
     Flask, render_template, request, redirect, url_for,
     flash, make_response, abort
 )
+from flask import g       
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import os, requests, jwt, datetime
 from functools import wraps
 import logging
-from flask import g
-
 from types import SimpleNamespace
 
 
@@ -62,7 +62,7 @@ EXEMPT_ENDPOINTS = {
 def inject_flags():
     return dict(
         is_logged_in=bool(request.cookies.get("bearer")),
-        is_superuser=is_super(),      # your helper from earlier
+        is_superuser=is_super(),          # now defined above
     )
 
 
@@ -450,11 +450,11 @@ def kalkulation():
 @app.route("/controlling")
 def controlling():
     return render_template("controlling.html")
+def is_super() -> bool:
     """
     Return True when the logged-in user is a superuser.
     FastAPI-Users doesn't embed that flag in the JWT, so we fetch
-    it once via /users/me. Result is cached in Flask's `g` object
-    to avoid multiple round-trips per page render.
+    it once via /users/me and cache it in Flask's `g` object.
     """
     if hasattr(g, "_is_super"):
         return g._is_super
@@ -465,12 +465,12 @@ def controlling():
         return False
 
     try:
-        resp = requests.get(
+        r = requests.get(
             f"{BASE_API_URL}/users/me",
             headers={"Authorization": f"Bearer {token}"},
             timeout=API_TIMEOUT,
         )
-        g._is_super = resp.ok and resp.json().get("is_superuser", False)
+        g._is_super = r.ok and r.json().get("is_superuser", False)
     except requests.RequestException:
         g._is_super = False
 
