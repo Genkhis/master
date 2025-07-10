@@ -35,7 +35,7 @@ BASE_API_URL = os.getenv("API_URL", "http://127.0.0.1:8001")
 API_TIMEOUT  = 8          # seconds       ← NEW
 app.config["API_URL"] = BASE_API_URL
 
-JWT_SECRET = os.getenv("JWT_SECRET", "!ch@nge.M3!")
+JWT_SECRET = os.getenv("JWT_SECRET", "change-me")   
 
 # expose {{ API_URL }} in every template
 @app.context_processor
