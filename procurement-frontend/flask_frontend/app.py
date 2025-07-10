@@ -448,27 +448,32 @@ def kalkulation():
 @app.route("/controlling")
 def controlling():
     return render_template("controlling.html")
-def is_super() -> bool:
     """
-    Return True if the bearer cookie contains a JWT with is_superuser=True.
-    Falls back to unsigned decode if secrets differ between services.
+    Return True when the logged-in user is a superuser.
+    FastAPI-Users doesn't embed that flag in the JWT, so we fetch
+    it once via /users/me. Result is cached in Flask's `g` object
+    to avoid multiple round-trips per page render.
     """
+    from flask import g
+    if hasattr(g, "_is_super"):
+        return g._is_super
+
     token = request.cookies.get("bearer")
     if not token:
+        g._is_super = False
         return False
 
     try:
-        payload = jwt.decode(
-            token, JWT_SECRET, algorithms=["HS256"], options={"verify_aud": False}
+        resp = requests.get(
+            f"{BASE_API_URL}/users/me",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=API_TIMEOUT,
         )
-    except Exception:
-        # Secret mismatch? try unsigned decode—safe enough for UI gating.
-        try:
-            payload = jwt.decode(token, options={"verify_signature": False})
-        except Exception:
-            return False
+        g._is_super = resp.ok and resp.json().get("is_superuser", False)
+    except requests.RequestException:
+        g._is_super = False
 
-    return bool(payload.get("is_superuser"))
+    return g._is_super
 
 @app.route("/users")
 def users():
