@@ -69,25 +69,25 @@ def require_login_for_protected_pages():
     next_url = request.full_path.rstrip("?")  # keeps query string
     login_url = url_for("login", next=next_url, _external=False)
     return redirect(login_url)
-def _current_user():
-    """Return True if a valid JWT is present, else False (and log why)."""
+
+def _current_user() -> bool:
+    """Return True when a valid JWT is present in cookie or header."""
     token = (
-        request.cookies.get("bearer") or                    # ← renamed
-        request.headers.get("Authorization", "")
-               .removeprefix("Bearer ").strip()
+        request.cookies.get("bearer") or
+        request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
     )
-    log.info("PATH=%s  cookie-present=%s",
-             request.path, bool(request.cookies.get("bearer")))  # ← renamed
     if not token:
-        log.info("→ no token")
         return False
+
     try:
-        jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        log.info("→ token valid")
+        # ignore the “aud” claim produced by FastAPI-Users
+        jwt.decode(token, JWT_SECRET,
+                   algorithms=["HS256"],
+                   options={"verify_aud": False})
         return True
-    except jwt.PyJWTError as exc:
-        log.info("→ token INVALID: %s", exc)
+    except jwt.PyJWTError:
         return False
+
 
 
 
