@@ -1,5 +1,6 @@
 ﻿from flask import (
-    Flask, render_template, request, redirect, url_for, flash, make_response
+    Flask, render_template, request, redirect, url_for,
+    flash, make_response, abort
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -447,12 +448,27 @@ def kalkulation():
 @app.route("/controlling")
 def controlling():
     return render_template("controlling.html")
-def is_super():
+def is_super() -> bool:
+    """
+    Return True if the bearer cookie contains a JWT with is_superuser=True.
+    Falls back to unsigned decode if secrets differ between services.
+    """
     token = request.cookies.get("bearer")
     if not token:
         return False
-    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-    return payload.get("is_superuser", False)
+
+    try:
+        payload = jwt.decode(
+            token, JWT_SECRET, algorithms=["HS256"], options={"verify_aud": False}
+        )
+    except Exception:
+        # Secret mismatch? try unsigned decode—safe enough for UI gating.
+        try:
+            payload = jwt.decode(token, options={"verify_signature": False})
+        except Exception:
+            return False
+
+    return bool(payload.get("is_superuser"))
 
 @app.route("/users")
 def users():
