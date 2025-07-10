@@ -7,6 +7,8 @@ from flask_migrate import Migrate
 import os, requests, jwt, datetime
 from functools import wraps
 import logging
+from flask import g
+
 from types import SimpleNamespace
 
 
@@ -454,7 +456,6 @@ def controlling():
     it once via /users/me. Result is cached in Flask's `g` object
     to avoid multiple round-trips per page render.
     """
-    from flask import g
     if hasattr(g, "_is_super"):
         return g._is_super
 
