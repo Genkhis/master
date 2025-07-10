@@ -9,7 +9,7 @@
 <div class="row justify-content-center mt-5">
 
     <div class="text-center mb-4">
-        <img src="{{ url_for('static', filename='images/logo-full.png') }}"
+        <img src="{{ url_for('images', filename='logo-full.png') }}"
              alt="Firmenlogo"
              class="img-fluid"
              style="max-width: 140px;">
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const API    = '{{ API_URL }}';
   const nextUrl = new URLSearchParams(location.search).get('next')
                 || '{{ url_for("index") }}';
-
+$(
   $('#login-form')?.addEventListener('submit', async ev => {
     ev.preventDefault();
 
