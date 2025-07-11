@@ -15,7 +15,9 @@
         <label class="form-label">Passwort</label>
         <input id="password" type="password" class="form-control"
                {{ "" if edit_mode else "required" }}>
-        <small class="text-muted">{{ "Leer lassen zum Beibehalten" if edit_mode else "" }}</small>
+        <small class="text-muted">
+            {{ "Leer lassen zum Beibehalten" if edit_mode else "" }}
+        </small>
     </div>
 
     <div class="form-check mb-3">
@@ -36,40 +38,44 @@
 <script>
 const API_URL = "{{ API_URL }}";
 const $ = s => document.querySelector(s);
-function authHeader(){
-  const m = document.cookie.split(';').find(c=>c.trim().startsWith('bearer='));
-  return m ? {Authorization:`Bearer ${m.split('=')[1]}`} : {};
+function authHeader () {
+  const m = document.cookie.split(';').find(c => c.trim().startsWith('bearer='));
+  return m ? { Authorization: `Bearer ${m.split('=')[1]}` } : {};
 }
 
 const id      = new URLSearchParams(location.search).get('id');
 const usersEP = `${API_URL}/users`;
 const regEP   = `${API_URL}/auth/register`;
 
-/* ----- edit mode: pre-fill ----- */
-if (id){
+/* ----- edit mode: pre-fill data ----- */
+if (id) {
   fetch(`${usersEP}/${id}`, { headers: authHeader() })
     .then(r => r.json())
-    .then(u => { $('#email').value = u.email; $('#super').checked = u.is_superuser; });
+    .then(u => {
+        $('#email').value   = u.email;
+        $('#super').checked = u.is_superuser;
+    });
 }
 
 $('#user-form').addEventListener('submit', ev => {
   ev.preventDefault();
-  $('#spinner').classList.remove('d-none'); $('#save-btn').disabled = true;
+  $('#spinner').classList.remove('d-none');
+  $('#save-btn').disabled = true;
   $('#form-error').classList.add('d-none');
 
   const createPayload = {
-    email       : $('#email').value.trim(),
-    password    : $('#password').value.trim() || "ChangeMe123!", // PW required by API
-    is_active   : true,
-    is_verified : true
+    email      : $('#email').value.trim(),
+    password   : $('#password').value.trim() || "ChangeMe123!",
+    is_active  : true,
+    is_verified: true
   };
 
   const updatePayload = {
-    password     : $('#password').value.trim() || undefined,
-    is_superuser : $('#super').checked
+    password    : $('#password').value.trim() || undefined,
+    is_superuser: $('#super').checked
   };
 
-  /* --------- branch: new vs edit --------- */
+  /* ---------- new vs edit ---------- */
   const p = id
     ? fetch(`${usersEP}/${id}`, {
          method : 'PATCH',
@@ -79,29 +85,34 @@ $('#user-form').addEventListener('submit', ev => {
     : fetch(regEP, {
          method : 'POST',
          headers: { ...authHeader(), 'Content-Type': 'application/json' },
-         body   : JSON.stringify({ ...createPayload, is_superuser: $('#super').checked })
+         body   : JSON.stringify({ ...createPayload,
+                                   is_superuser: $('#super').checked })
        })
-       /* FastAPI-Users ignores is_superuser in /auth/register –
-          send a follow-up PATCH if super-flag was checked */
-       .then(r => r.ok ? r.json() : Promise.reject(r))
-       .then(u => $('#super').checked
+      /* /auth/register ignores is_superuser → optional follow-up PATCH */
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(u => $('#super').checked
             ? fetch(`${usersEP}/${u.id}`, {
                   method : 'PATCH',
                   headers: { ...authHeader(), 'Content-Type': 'application/json' },
-                  body   : JSON.stringify({ is_superuser:true })
+                  body   : JSON.stringify({ is_superuser: true })
               })
             : Promise.resolve());
 
   p.then(r => {
-      if (r && !r.ok) return r.text().then(t=>Promise.reject({code:r.status,msg:t}));
+      if (r && !r.ok) {
+         return r.text().then(t => Promise.reject({ code: r.status, msg: t }));
+      }
       location.href = '{{ url_for("users") }}';
   })
   .catch(async err => {
       const txt = err.msg || (err.text ? await err.text() : err);
-      $('#form-error').textContent = `Fehler ${err.code||''} – ${txt}`;
+      $('#form-error').textContent = `Fehler ${err.code || ''} – ${txt}`;
       $('#form-error').classList.remove('d-none');
   })
-  .finally(()=>{ $('#spinner').classList.add('d-none'); $('#save-btn').disabled=false; });
+  .finally(() => {
+      $('#spinner').classList.add('d-none');
+      $('#save-btn').disabled = false;
+  });
 });
 </script>
 {% endblock %}

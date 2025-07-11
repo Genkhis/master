@@ -22,12 +22,13 @@
 <script>
 const API_URL = "{{ API_URL }}";
 const $ = s => document.querySelector(s);
-function authHeader(){
-  const m = document.cookie.split(';').find(c=>c.trim().startsWith('bearer='));
-  return m ? {Authorization:`Bearer ${m.split('=')[1]}`} : {};
+function authHeader () {
+  const m = document.cookie.split(';').find(c => c.trim().startsWith('bearer='));
+  return m ? { Authorization: `Bearer ${m.split('=')[1]}` } : {};
 }
 
-fetch(`${API_URL}/users`, { headers: authHeader() })
+/* ---------- list all users (super-user only) ---------- */
+fetch(`${API_URL}/admin/users`, { headers: authHeader() })
   .then(r => r.ok ? r.json() : Promise.reject(r))
   .then(users => {
      users.forEach(u => $('#users-table tbody').insertAdjacentHTML('beforeend', `
@@ -42,7 +43,8 @@ fetch(`${API_URL}/users`, { headers: authHeader() })
        </tr>`));
   })
   .catch(async r => {
-     $('#u-error').textContent = `Fehler ${r.status}: ${await r.text()}`;
+     $('#u-error').textContent =
+        \`Fehler ${r.status}: ${await r.text()}\`;
      $('#u-error').classList.remove('d-none');
   });
 </script>
