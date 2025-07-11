@@ -9,7 +9,9 @@
 </a>
 
 <table class="table table-sm table-hover" id="users-table">
-    <thead><tr><th>E-Mail</th><th>Aktiv</th><th>Super</th><th>Aktion</th></tr></thead>
+    <thead>
+        <tr><th>E-Mail</th><th>Aktiv</th><th>Super</th><th>Aktion</th></tr>
+    </thead>
     <tbody></tbody>
 </table>
 
@@ -28,20 +30,20 @@ function authHeader(){
 fetch(`${API_URL}/users`, { headers: authHeader() })
   .then(r => r.ok ? r.json() : Promise.reject(r))
   .then(users => {
-      users.forEach(u => $('#users-table tbody').insertAdjacentHTML('beforeend', `
-        <tr>
-          <td>${u.email}</td>
-          <td>${u.is_active ? "✅" : "❌"}</td>
-          <td>${u.is_superuser ? "👑" : ""}</td>
-          <td>
-            <a href="{{ url_for('users_create') }}?id=${u.id}"
-               class="btn btn-sm btn-outline-primary">Edit</a>
-          </td>
-        </tr>`));
+     users.forEach(u => $('#users-table tbody').insertAdjacentHTML('beforeend', `
+       <tr>
+         <td>${u.email}</td>
+         <td>${u.is_active ? "✅" : "❌"}</td>
+         <td>${u.is_superuser ? "👑" : ""}</td>
+         <td>
+           <a href="{{ url_for('users_create') }}?id=${u.id}"
+              class="btn btn-sm btn-outline-primary">Edit</a>
+         </td>
+       </tr>`));
   })
   .catch(async r => {
-      $('#u-error').textContent = `Fehler ${r.status}: ${await r.text()}`;
-      $('#u-error').classList.remove('d-none');
+     $('#u-error').textContent = `Fehler ${r.status}: ${await r.text()}`;
+     $('#u-error').classList.remove('d-none');
   });
 </script>
 {% endblock %}
