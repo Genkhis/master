@@ -10,46 +10,78 @@
         <label class="form-label">E-Mail</label>
         <input id="email" type="email" class="form-control" required>
     </div>
+
     <div class="mb-3">
         <label class="form-label">Passwort</label>
-        <input id="password" type="password" class="form-control" {{ "" if edit_mode else "required" }}>
+        <input id="password" type="password" class="form-control"
+               {{ "" if edit_mode else "required" }}>
+        <small class="text-muted">{{ "Leer lassen zum Beibehalten" if edit_mode else "" }}</small>
     </div>
+
     <div class="form-check mb-3">
         <input id="super" class="form-check-input" type="checkbox">
         <label class="form-check-label">Superuser</label>
     </div>
 
-    <button class="btn btn-primary">Speichern</button>
+    <button id="save-btn" class="btn btn-primary">
+        <span id="spinner" class="spinner-border spinner-border-sm d-none"></span>
+        Speichern
+    </button>
 </form>
+
+<div id="form-error" class="alert alert-danger d-none mt-3"></div>
 {% endblock %}
 
 {% block script %}
 <script>
-const id = new URLSearchParams(location.search).get('id');
-if (id) { // edit – prefill
-  fetch(`{{ API_URL }}/admin/users/${id}`, { headers: authHeader() })
+const $ = sel => document.querySelector(sel);
+const id      = new URLSearchParams(location.search).get('id');
+const apiBase = `${API_URL}/users`;
+
+if (id) {                      // ----- edit: prefill -----
+  fetch(`${apiBase}/${id}`, { headers: authHeader() })
     .then(r => r.json())
     .then(u => {
-      $('#email').value     = u.email;
-      $('#super').checked   = u.is_superuser;
+       $('#email').value   = u.email;
+       $('#super').checked = u.is_superuser;
     });
 }
 
-document.querySelector('#user-form').addEventListener('submit', ev => {
+$('#user-form').addEventListener('submit', ev => {
   ev.preventDefault();
+  $('#spinner').classList.remove('d-none');
+  $('#save-btn').disabled = true;
+  $('#form-error').classList.add('d-none');
+
   const payload = {
-    email: $('#email').value.trim(),
-    password: $('#password').value.trim() || undefined,
-    is_superuser: $('#super').checked
+    email        : $('#email').value.trim(),
+    password     : $('#password').value.trim() || undefined,
+    is_active    : true,
+    is_superuser : $('#super').checked,
+    is_verified  : true,
+    roles        : []          // can be expanded later
   };
+
   const method = id ? 'PATCH' : 'POST';
-  const url    = id ? `{{ API_URL }}/admin/users/${id}` : '{{ API_URL }}/admin/users';
+  const url    = id ? `${apiBase}/${id}` : apiBase;
+
   fetch(url, {
-    method, headers: { ...authHeader(), 'Content-Type':'application/json' },
-    body: JSON.stringify(payload)
-  }).then(r => {
-    if (!r.ok) return alert('Fehler!');
-    location.href = '{{ url_for("users") }}';
+      method,
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+  })
+  .then(r => {
+      if (!r.ok) return r.text().then(t => Promise.reject({code:r.status,msg:t}));
+      location.href = '{{ url_for("users") }}';
+  })
+  .catch(err => {
+      $('#form-error').textContent =
+         `Fehler ${err.code || ''} – ${err.msg || err}`;
+      $('#form-error').classList.remove('d-none');
+  })
+  .finally(() => {
+      $('#spinner').classList.add('d-none');
+      $('#save-btn').disabled = false;
   });
 });
 </script>
