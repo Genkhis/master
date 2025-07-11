@@ -34,12 +34,21 @@
 
 {% block script %}
 <script>
+/* ── small helpers ───────────────────────────────────────────── */
 const API_URL = "{{ API_URL }}";
-const $ = sel => document.querySelector(sel);
+const $       = sel => document.querySelector(sel);
+function authHeader() {
+  const match = document.cookie.split(';')
+        .find(c => c.trim().startsWith('bearer='));
+  if (!match) return {};
+  return { Authorization: `Bearer ${match.split('=')[1]}` };
+}
+/* ────────────────────────────────────────────────────────────── */
+
 const id      = new URLSearchParams(location.search).get('id');
 const apiBase = `${API_URL}/users`;
 
-if (id) {                      // ----- edit: prefill -----
+if (id) {                      // ----- edit: pre-fill -----
   fetch(`${apiBase}/${id}`, { headers: authHeader() })
     .then(r => r.json())
     .then(u => {
@@ -60,7 +69,7 @@ $('#user-form').addEventListener('submit', ev => {
     is_active    : true,
     is_superuser : $('#super').checked,
     is_verified  : true,
-    roles        : []          // can be expanded later
+    roles        : []
   };
 
   const method = id ? 'PATCH' : 'POST';
@@ -72,7 +81,9 @@ $('#user-form').addEventListener('submit', ev => {
       body: JSON.stringify(payload)
   })
   .then(r => {
-      if (!r.ok) return r.text().then(t => Promise.reject({code:r.status,msg:t}));
+      if (!r.ok) {
+        return r.text().then(t => Promise.reject({code:r.status,msg:t}));
+      }
       location.href = '{{ url_for("users") }}';
   })
   .catch(err => {
