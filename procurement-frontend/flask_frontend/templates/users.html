@@ -5,12 +5,17 @@
 <h3 class="mb-4">Benutzer</h3>
 
 <a href="{{ url_for('users_create') }}" class="btn btn-sm btn-success mb-3">
-    <i class="bi bi-plus"></i> Neuer Benutzer
+    <i class="bi bi-plus"></i> Neuer&nbsp;Benutzer
 </a>
 
 <table class="table table-sm table-hover" id="users-table">
     <thead>
-        <tr><th>E-Mail</th><th>Aktiv</th><th>Super</th><th>Aktion</th></tr>
+        <tr>
+            <th>E-Mail</th>
+            <th>Aktiv</th>
+            <th>Super</th>
+            <th>Aktion</th>
+        </tr>
     </thead>
     <tbody></tbody>
 </table>
@@ -20,32 +25,40 @@
 
 {% block script %}
 <script>
+/* ---------- helpers ---------- */
 const API_URL = "{{ API_URL }}";
-const $ = s => document.querySelector(s);
-function authHeader () {
-  const m = document.cookie.split(';').find(c => c.trim().startsWith('bearer='));
-  return m ? { Authorization: `Bearer ${m.split('=')[1]}` } : {};
+const $       = sel => document.querySelector(sel);
+function authHeader() {
+  const c = document.cookie.split(';').find(x => x.trim().startsWith('bearer='));
+  return c ? { Authorization: `Bearer ${c.split('=')[1]}` } : {};
 }
 
-/* ---------- list all users (super-user only) ---------- */
+/* ---------- populate user list ---------- */
 fetch(`${API_URL}/admin/users`, { headers: authHeader() })
-  .then(r => r.ok ? r.json() : Promise.reject(r))
+  .then(r => r.ok ? r.json() : r.text().then(txt => Promise.reject({code:r.status,msg:txt})))
   .then(users => {
-     users.forEach(u => $('#users-table tbody').insertAdjacentHTML('beforeend', `
-       <tr>
-         <td>${u.email}</td>
-         <td>${u.is_active ? "✅" : "❌"}</td>
-         <td>${u.is_superuser ? "👑" : ""}</td>
-         <td>
-           <a href="{{ url_for('users_create') }}?id=${u.id}"
-              class="btn btn-sm btn-outline-primary">Edit</a>
-         </td>
-       </tr>`));
+    const tbody = $('#users-table tbody');
+    if (!users.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-muted">Keine Benutzer gefunden</td></tr>';
+      return;
+    }
+    users.forEach(u => {
+      const row = `
+        <tr>
+          <td>${u.email}</td>
+          <td>${u.is_active ? "✅" : "❌"}</td>
+          <td>${u.is_superuser ? "👑" : ""}</td>
+          <td>
+            <a href="{{ url_for('users_create') }}?id=${u.id}"
+               class="btn btn-sm btn-outline-primary">Edit</a>
+          </td>
+        </tr>`;
+      tbody.insertAdjacentHTML('beforeend', row);
+    });
   })
-  .catch(async r => {
-     $('#u-error').textContent =
-        \`Fehler ${r.status}: ${await r.text()}\`;
-     $('#u-error').classList.remove('d-none');
+  .catch(err => {
+    $('#u-error').textContent = `Fehler ${err.code ?? ''} – ${err.msg ?? err}`;
+    $('#u-error').classList.remove('d-none');
   });
 </script>
 {% endblock %}
