@@ -921,6 +921,7 @@ async def upload_suppliers(
         "operations": upserted                             
     }
 
+admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 
@@ -992,6 +993,19 @@ class UserAdminPatch(BaseModel):
 def health():
     return {"status": "ok"}
 
+@admin_router.get(
+    "/users",
+    response_model=list[UserRead],
+    status_code=status.HTTP_200_OK,
+    summary="List all users (super-user only)",
+)
+def list_all_users(                                         # sync style like rest of file
+    _ : User  = Depends(superuser_required),                # 403 if not super-user
+    db: Session = Depends(get_db),
+):
+    return db.query(User).all()
+
+app.include_router(admin_router)
 @app.get("/article_suggestions", tags=["Articles"])
 def article_suggestions(q: str = Query(..., min_length=3), db: Session = Depends(get_db)):
     # Query for articles that match the query in their name.
