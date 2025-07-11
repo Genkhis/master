@@ -1,24 +1,44 @@
-﻿from fastapi_users import schemas
+﻿# schemas.py
 import uuid
-from pydantic import BaseModel
 from typing import List, Optional
 
-# Role schema for API responses
+from pydantic import BaseModel, EmailStr
+from fastapi_users import schemas
+
+
+# ────────────────────────────
+# Role DTO (if you ever expose it)
+# ────────────────────────────
 class RoleRead(BaseModel):
     id: uuid.UUID
     name: str
 
-# Schema for creating a new user (inherits email & password validation)
+
+# ────────────────────────────
+# User – CREATE
+# ────────────────────────────
 class UserCreate(schemas.BaseUserCreate):
-    roles: Optional[List[uuid.UUID]] = []  # allow assigning roles at creation
+    roles: Optional[List[uuid.UUID]] = []  # allow role IDs at creation
 
-# Schema for reading user data (includes nested roles)
-class UserRead(schemas.BaseUser[uuid.UUID]):
-    roles: List[RoleRead] = []
 
-# Schema for updating user data (all fields optional)
+# ────────────────────────────
+# User – READ  (⚠️ no roles; avoids lazy-load / MissingGreenlet)
+# ────────────────────────────
+class UserRead(BaseModel):
+    id: uuid.UUID
+    email: EmailStr
+    is_active: bool
+    is_superuser: bool
+    is_verified: bool
+
+    class Config:
+        from_attributes = True
+
+
+# ────────────────────────────
+# User – PATCH / PUT
+# ────────────────────────────
 class UserUpdate(schemas.BaseUserUpdate):
     is_active: Optional[bool] = None
     is_superuser: Optional[bool] = None
     roles: Optional[List[uuid.UUID]] = None
-
