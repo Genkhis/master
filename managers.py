@@ -10,9 +10,8 @@ from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from db_adapter import get_user_db
 from models import User
 
-# ---------------------------------------------------------------------------
-# One single source: read JWT secret directly from env (with safe fallback)
-# ---------------------------------------------------------------------------
+
+
 SECRET = os.getenv("JWT_SECRET", "change-me")  # keep as str, do not .encode()
 
 class UserManager(BaseUserManager[User, UUID]):
