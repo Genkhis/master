@@ -80,7 +80,31 @@ def require_login_for_protected_pages():
     next_url = request.full_path.rstrip("?")  # keeps query string
     login_url = url_for("login", next=next_url, _external=False)
     return redirect(login_url)
+def is_super() -> bool:
+    """
+    Return True when the logged-in user is a superuser.
+    FastAPI-Users doesn't embed that flag in the JWT, so we fetch
+    it once via /users/me and cache it in Flask's `g` object.
+    """
+    if hasattr(g, "_is_super"):
+        return g._is_super
 
+    token = request.cookies.get("bearer")
+    if not token:
+        g._is_super = False
+        return False
+
+    try:
+        r = requests.get(
+            f"{BASE_API_URL}/users/me",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=API_TIMEOUT,
+        )
+        g._is_super = r.ok and r.json().get("is_superuser", False)
+    except requests.RequestException:
+        g._is_super = False
+
+    return g._is_super
 def _current_user() -> bool:
     """Return True when a valid JWT is present in cookie or header."""
     token = (
@@ -450,31 +474,7 @@ def kalkulation():
 @app.route("/controlling")
 def controlling():
     return render_template("controlling.html")
-def is_super() -> bool:
-    """
-    Return True when the logged-in user is a superuser.
-    FastAPI-Users doesn't embed that flag in the JWT, so we fetch
-    it once via /users/me and cache it in Flask's `g` object.
-    """
-    if hasattr(g, "_is_super"):
-        return g._is_super
 
-    token = request.cookies.get("bearer")
-    if not token:
-        g._is_super = False
-        return False
-
-    try:
-        r = requests.get(
-            f"{BASE_API_URL}/users/me",
-            headers={"Authorization": f"Bearer {token}"},
-            timeout=API_TIMEOUT,
-        )
-        g._is_super = r.ok and r.json().get("is_superuser", False)
-    except requests.RequestException:
-        g._is_super = False
-
-    return g._is_super
 
 @app.route("/users")
 def users():
