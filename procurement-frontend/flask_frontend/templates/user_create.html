@@ -34,67 +34,74 @@
 
 {% block script %}
 <script>
-/* ── small helpers ───────────────────────────────────────────── */
 const API_URL = "{{ API_URL }}";
-const $       = sel => document.querySelector(sel);
-function authHeader() {
-  const match = document.cookie.split(';')
-        .find(c => c.trim().startsWith('bearer='));
-  if (!match) return {};
-  return { Authorization: `Bearer ${match.split('=')[1]}` };
+const $ = s => document.querySelector(s);
+function authHeader(){
+  const m = document.cookie.split(';').find(c=>c.trim().startsWith('bearer='));
+  return m ? {Authorization:`Bearer ${m.split('=')[1]}`} : {};
 }
-/* ────────────────────────────────────────────────────────────── */
 
 const id      = new URLSearchParams(location.search).get('id');
-const apiBase = `${API_URL}/users`;
+const usersEP = `${API_URL}/users`;
+const regEP   = `${API_URL}/auth/register`;
 
-if (id) {                      // ----- edit: pre-fill -----
-  fetch(`${apiBase}/${id}`, { headers: authHeader() })
+/* ----- edit mode: pre-fill ----- */
+if (id){
+  fetch(`${usersEP}/${id}`, { headers: authHeader() })
     .then(r => r.json())
-    .then(u => {
-       $('#email').value   = u.email;
-       $('#super').checked = u.is_superuser;
-    });
+    .then(u => { $('#email').value = u.email; $('#super').checked = u.is_superuser; });
 }
 
 $('#user-form').addEventListener('submit', ev => {
   ev.preventDefault();
-  $('#spinner').classList.remove('d-none');
-  $('#save-btn').disabled = true;
+  $('#spinner').classList.remove('d-none'); $('#save-btn').disabled = true;
   $('#form-error').classList.add('d-none');
 
-  const payload = {
-    email        : $('#email').value.trim(),
-    password     : $('#password').value.trim() || undefined,
-    is_active    : true,
-    is_superuser : $('#super').checked,
-    is_verified  : true,
-    roles        : []
+  const createPayload = {
+    email       : $('#email').value.trim(),
+    password    : $('#password').value.trim() || "ChangeMe123!", // PW required by API
+    is_active   : true,
+    is_verified : true
   };
 
-  const method = id ? 'PATCH' : 'POST';
-  const url    = id ? `${apiBase}/${id}` : apiBase;
+  const updatePayload = {
+    password     : $('#password').value.trim() || undefined,
+    is_superuser : $('#super').checked
+  };
 
-  fetch(url, {
-      method,
-      headers: { ...authHeader(), 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-  })
-  .then(r => {
-      if (!r.ok) {
-        return r.text().then(t => Promise.reject({code:r.status,msg:t}));
-      }
+  /* --------- branch: new vs edit --------- */
+  const p = id
+    ? fetch(`${usersEP}/${id}`, {
+         method : 'PATCH',
+         headers: { ...authHeader(), 'Content-Type': 'application/json' },
+         body   : JSON.stringify(updatePayload)
+       })
+    : fetch(regEP, {
+         method : 'POST',
+         headers: { ...authHeader(), 'Content-Type': 'application/json' },
+         body   : JSON.stringify({ ...createPayload, is_superuser: $('#super').checked })
+       })
+       /* FastAPI-Users ignores is_superuser in /auth/register –
+          send a follow-up PATCH if super-flag was checked */
+       .then(r => r.ok ? r.json() : Promise.reject(r))
+       .then(u => $('#super').checked
+            ? fetch(`${usersEP}/${u.id}`, {
+                  method : 'PATCH',
+                  headers: { ...authHeader(), 'Content-Type': 'application/json' },
+                  body   : JSON.stringify({ is_superuser:true })
+              })
+            : Promise.resolve());
+
+  p.then(r => {
+      if (r && !r.ok) return r.text().then(t=>Promise.reject({code:r.status,msg:t}));
       location.href = '{{ url_for("users") }}';
   })
-  .catch(err => {
-      $('#form-error').textContent =
-         `Fehler ${err.code || ''} – ${err.msg || err}`;
+  .catch(async err => {
+      const txt = err.msg || (err.text ? await err.text() : err);
+      $('#form-error').textContent = `Fehler ${err.code||''} – ${txt}`;
       $('#form-error').classList.remove('d-none');
   })
-  .finally(() => {
-      $('#spinner').classList.add('d-none');
-      $('#save-btn').disabled = false;
-  });
+  .finally(()=>{ $('#spinner').classList.add('d-none'); $('#save-btn').disabled=false; });
 });
 </script>
 {% endblock %}
