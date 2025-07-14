@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>{% block title %}Beschaffungssystem{% endblock %}</title>
 
     <!-- Bootstrap + Icons -->
@@ -12,11 +13,10 @@
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
-    <link rel="icon" type="image/png"
-          sizes="32x32"
+    <!-- Favicon & Apple Touch -->
+    <link rel="icon" type="image/png" sizes="32x32"
           href="{{ url_for('static', filename='images/favicon-32.png') }}">
-    <link rel="icon" type="image/png"
-          sizes="16x16"
+    <link rel="icon" type="image/png" sizes="16x16"
           href="{{ url_for('static', filename='images/favicon-16.png') }}">
     <link rel="apple-touch-icon"
           href="{{ url_for('static', filename='images/logo-full.png') }}">
@@ -25,10 +25,15 @@
 </head>
 
 <body class="bg-light">
-    <!-- ───── global navbar ───── -->
+    <!-- ────────── Navbar ────────── -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
+            <a class="navbar-brand d-flex align-items-center fw-bold"
+               href="{{ url_for('index') }}">
+                <!-- Logo links vom Text -->
+                <img src="{{ url_for('static',
+                             filename='images/logo-small.png') }}"
+                     alt="Logo" width="32" height="32" class="me-2">
                 Beschaffungssystem
             </a>
 
@@ -40,32 +45,22 @@
 
             <div class="collapse navbar-collapse" id="mainNav">
                 <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
-                    {# ——— links visible only when logged-in ——— #}
                     {% if is_logged_in %}
-
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}">
-                            Startseite
-                        </a>
+                        <a class="nav-link" href="{{ url_for('index') }}">Startseite</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('suppliers') }}">
-                            Lieferanten
-                        </a>
+                        <a class="nav-link" href="{{ url_for('suppliers') }}">Lieferanten</a>
                     </li>
-
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('upload_excel') }}">
                             Excel hochladen
                         </a>
                     </li>
 
-                    {# ——— super-user only ——— #}
                     {% if is_superuser %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('users') }}">
-                            Benutzer
-                        </a>
+                        <a class="nav-link" href="{{ url_for('users') }}">Benutzer</a>
                     </li>
                     {% endif %}
 
@@ -76,7 +71,6 @@
                         </button>
                     </li>
                     {% else %}
-                    {# optional: simple login button when not authenticated #}
                     <li class="nav-item ms-lg-3">
                         <a class="btn btn-primary btn-sm"
                            href="{{ url_for('login') }}">Login</a>
@@ -87,39 +81,37 @@
         </div>
     </nav>
 
-    <!--  page body  -->
-    <div class="container">{% block content %}{% endblock %}</div>
+    <!-- ────────── Seiten‑Inhalt ────────── -->
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
 
-    <!-- Bootstrap bundle -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     {% block script %}{% endblock %}
 
-    <!-- ───── universal logout logic ───── -->
+    <!-- ────────── Logout‑Logik ────────── -->
     <script>
-(() => {
-  const btn = document.getElementById('logout-btn');
-  if (!btn) return;
+  (() => {
+    const btn = document.getElementById('logout-btn');
+    if (!btn) return;
 
-  function hasJwt () {
-    return document.cookie.split(';')
-             .some(c => c.trim().startsWith('bearer='));   // ← cookie renamed
-  }
+    const hasJwt = () =>
+      document.cookie.split(';')
+        .some(c => c.trim().startsWith('bearer='));
 
-  // show / hide on initial render
-  btn.classList.toggle('d-none', !hasJwt());
+    btn.classList.toggle('d-none', !hasJwt());
 
-  btn.addEventListener('click', () => {
-    /* 1 – client-side logout: drop the token */
-    document.cookie = 'bearer=; Path=/; Max-Age=0; SameSite=Lax; Secure';
-
-    /* 2 – optional: ping backend logout endpoint (ignore errors) */
-    fetch('{{ API_URL }}/auth/logout', { method: 'POST' }).catch(() => {});
-
-    /* 3 – redirect to login */
-    window.location.replace('{{ url_for("login") }}');
-  });
-})();
+    btn.addEventListener('click', () => {
+      /* 1 – Token löschen */
+      document.cookie = 'bearer=; Path=/; Max-Age=0; SameSite=Lax; Secure';
+      /* 2 – optionaler Backend‑Logout */
+      fetch('{{ API_URL }}/auth/logout', { method:'POST' }).catch(()=>{});
+      /* 3 – Redirect */
+      window.location.replace('{{ url_for("login") }}');
+    });
+  })();
     </script>
 </body>
 </html>
