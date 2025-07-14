@@ -29,7 +29,6 @@
         color: #dc3545;
     }
 
-    /* Spinner + loading state for Zertifizierung dropdown */
     .spinner-sm {
         width: 1rem;
         height: 1rem;
@@ -81,7 +80,7 @@
                     ('supplier_number','Lieferanten‑Nr.'),
                     ('supplier_name','Lieferantenname'),
                     ('certification','Zertifizierung')] %}
-                    <option value="{{ fld }}" {% if fld= =fields[i] %}selected{% endif %}>
+                    <option value="{{ fld }}" {% if fld==fields[i] %}selected{% endif %}>
                         {{ label }}
                     </option>
                     {% endfor %}
@@ -102,14 +101,12 @@
     </div>
 </form>
 
-<!-- ───── result table (rendered server‑side include) ───── -->
 <div class="table-wrapper shadow-sm rounded-2 bg-white p-3">
     {% include "article_table.html" %}
 </div>
 {% endblock %}
 
 {% block script %}
-<!-- JS libs required only here -->
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 
