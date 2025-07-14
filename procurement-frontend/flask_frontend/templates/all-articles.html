@@ -2,7 +2,7 @@
 {% extends "base.html" %}
 {% block title %}Alle Artikel{% endblock %}
 
-{# --------------------- Seite‑spezifisches CSS -------------------- #}
+{# ---------------- Seite‑spezifisches CSS ---------------- #}
 {% block style %}
 <link rel="stylesheet"
       href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
@@ -12,21 +12,21 @@
         background: #f8f9fa;
     }
 
-    /* nur auf dieser Seite: container über gesamte Breite */
+    /* Container über komplette Breite */
     .container {
         max-width: 100% !important;
     }
 
-    /* Tabelle & Suchbereich */
+    /* Tabelle */
     .table-wrapper {
         overflow-x: auto;
     }
 
     .table {
         font-size: .95rem;
-        min-width: 1600px;
+        min-width: 1600px; /* 👉 breiter */
     }
-        /* 👉 breiter */
+
         .table th,
         .table td {
             padding: .6rem .85rem;
@@ -37,7 +37,7 @@
                 white-space: normal;
             }
 
-    /* +/− Suchzeile */
+    /* +/–‑Button in Suchzeilen */
     .remove-row {
         cursor: pointer;
         color: #dc3545;
@@ -58,12 +58,12 @@
 </style>
 {% endblock %}
 
-{# --------------------------- Inhalt ------------------------------ #}
+{# ----------------------- Inhalt ------------------------ #}
 {% block content %}
 
 <h1 class="mb-4">Artikelsuche</h1>
 
-<!-- ───── Such­formular ───── -->
+<!-- ─── Suchformular ─────────────────────────────────── -->
 <form id="search-form" class="mb-4" method="POST">
     {%- set queries = request.form.getlist('query[]') or [''] %}
     {%- set fields  = request.form.getlist('filter_by[]') or ['article_name'] %}
@@ -80,15 +80,18 @@
             <div class="col-8 col-md-3">
                 <select name="filter_by[]" class="form-select field-select">
                     {% for fld,label in [
-                    ('article_name'   ,'Artikelname'),
-                    ('description'    ,'Beschreibung'),
-                    ('item_no_ext'    ,'Externe Art.-Nr.'),
-                    ('cost_type'      ,'Kostenart'),
-                    ('category'       ,'Kategorie'),
+                    ('article_name','Artikelname'),
+                    ('description' ,'Beschreibung'),
+                    ('item_no_ext' ,'Externe Art.-Nr.'),
+                    ('cost_type'   ,'Kostenart'),
+                    ('category'    ,'Kategorie'),
                     ('supplier_number','Lieferanten‑Nr.'),
                     ('supplier_name'  ,'Lieferantenname'),
                     ('certification'  ,'Zertifizierung')] %}
-                    <option value="{{ fld }}" {% if fld==fields[i] %}selected{% endif %}>{{ label }}</option>
+                    <option value="{{ fld }}"
+                            {% if fld= =fields[i] %}selected{% endif %}>
+                        {{ label }}
+                    </option>
                     {% endfor %}
                 </select>
             </div>
@@ -106,23 +109,55 @@
         </div>
         <div class="col-auto"><button class="btn btn-primary">Suchen</button></div>
         <div class="col-auto">
-            <a href="{{ url_for('all_articles') }}" class="btn btn-outline-secondary">Zurücksetzen</a>
+            <a href="{{ url_for('all_articles') }}" class="btn btn-outline-secondary">
+                Zurücksetzen
+            </a>
         </div>
     </div>
 </form>
 
-<!-- ───── Ergebnis‑Tabelle ───── -->
+<!-- ─── Ergebnis‑Tabelle ─────────────────────────────── -->
 <div class="table-wrapper shadow-sm rounded-2 bg-white p-3">
     <table class="table table-hover table-bordered">
-      
+
+        <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>Artikelname</th>
+                <th>Kostenart</th>
+                <th>Kategorie</th>
+                <th class="wrap">Beschreibung</th>
+                <th>Abmessung</th>
+                <th>Externe&nbsp;Nr.</th>
+                <th>Verkaufseinheit</th>
+                <th>Einheiten&nbsp;/&nbsp;VE</th>
+                <th>Zert.</th>
+                <th class="text-nowrap">
+                    VE‑Preis<br><small>(Min&nbsp;/&nbsp;Max&nbsp;/&nbsp;Ø&nbsp;€)</small>
+                </th>
+                <th class="text-nowrap">
+                    Stückpreis<br><small>(Min&nbsp;/&nbsp;Max&nbsp;/&nbsp;Ø&nbsp;€/Stk)</small>
+                </th>
+                <th>Lieferant</th>
+            </tr>
+        </thead>
+
         <tbody>
+            {% if articles %}
             {% include "article_table.html" %}
+            {% else %}
+            <tr>
+                <td colspan="13" class="text-center text-muted py-4">
+                    Es wurden keine Ergebnisse für&nbsp;deine&nbsp;Suche&nbsp;gefunden.
+                </td>
+            </tr>
+            {% endif %}
         </tbody>
     </table>
 </div>
 {% endblock %}
 
-{# --------------------------- Skript ------------------------------ #}
+{# ----------------------- Skript ----------------------- #}
 {% block script %}
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
@@ -132,55 +167,50 @@ $(function () {
   const API_URL = "{{ API_URL }}";
 
   /* ---------- Autocomplete ---------- */
-  function attachAutocomplete(el) {
+  function attachAutocomplete(el){
     let timer;
     $(el).autocomplete({
-      minLength: 3,
-      delay: 0,
-      source(request, response) {
+      minLength:3, delay:0,
+      source(req,res){
         clearTimeout(timer);
-        timer = setTimeout(() => {
-          $.getJSON(`${API_URL}/article_suggestions`, { q: request.term.trim() })
-            .done(response)
-            .fail(() => response([]));
-        }, 250);
+        timer=setTimeout(()=> {
+          $.getJSON(`${API_URL}/article_suggestions`, {q:req.term.trim()})
+           .done(res).fail(()=>res([]));
+        },250);
       },
-      select(_e, ui) {
-        $(this).val(ui.item.value.trim());
-        return false;
-      }
+      select(_e,ui){ $(this).val(ui.item.value.trim()); return false; }
     });
   }
   attachAutocomplete($('.query-input'));
 
-  /* ---------- Dynamische Filter‑Zeilen ---------- */
-  $('#add-row').on('click', () => {
-    const $clone = $('.search-row').first().clone(true);
+  /* ---------- Dynamische Filterzeilen ---------- */
+  $('#add-row').on('click',()=>{
+    const $clone=$('.search-row').first().clone(true);
     $clone.find('input').val('');
     $clone.find('.remove-row').removeClass('d-none');
     $('#filter-container').append($clone);
     attachAutocomplete($clone.find('.query-input'));
   });
-  $(document).on('click', '.remove-row', function () {
+  $(document).on('click','.remove-row',function(){
     $(this).closest('.search-row').remove();
   });
 
   /* ---------- Zertifizierung inline speichern ---------- */
-  $(document).on('change', '.cert-select', function () {
-    const $sel  = $(this);
-    const artId = $sel.data('articleId');
-    if (!artId) return alert('Keine gültige Artikel‑ID gefunden.');
+  $(document).on('change','.cert-select',function(){
+    const $sel=$(this);
+    const artId=$sel.data('articleId');
+    if(!artId) return alert('Keine gültige Artikel‑ID gefunden.');
 
-    const $spinner = $('<div class="spinner-border spinner-sm" role="status"></div>');
+    const $spinner=$('<div class="spinner-border spinner-sm" role="status"></div>');
     $sel.after($spinner).addClass('loading-select');
 
     $.ajax({
-      url        : `${API_URL}/update_article_partial/${artId}`,
-      type       : 'PATCH',
-      contentType: 'application/json',
-      data       : JSON.stringify({ certification: $sel.val() }),
-      complete() { $spinner.remove(); $sel.removeClass('loading-select'); },
-      error(xhr) { alert(`Speichern fehlgeschlagen (${xhr.status}): ${xhr.responseText}`); }
+      url:`${API_URL}/update_article_partial/${artId}`,
+      type:'PATCH',
+      contentType:'application/json',
+      data:JSON.stringify({certification:$sel.val()}),
+      complete(){ $spinner.remove(); $sel.removeClass('loading-select'); },
+      error(xhr){ alert(`Speichern fehlgeschlagen (${xhr.status}): ${xhr.responseText}`); }
     });
   });
 });
