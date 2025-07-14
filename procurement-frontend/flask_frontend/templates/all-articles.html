@@ -1,28 +1,34 @@
-{# templates/all-articles.html  #}
+{# templates/all-articles.html #}
 {% extends "base.html" %}
 {% block title %}Alle Artikel{% endblock %}
 
 {% block style %}
-<!-- jQuery‑UI theme (only this page needs it) -->
 <link rel="stylesheet"
       href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
 
 <style>
     body {
-        background-color: #f8f9fa;
+        background: #f8f9fa;
     }
 
+    /* Such‑/Tabellen‑Layout */
     .table-wrapper {
         overflow-x: auto;
     }
 
     .table {
-        font-size: .875rem;
+        font-size: .95rem;
     }
 
-    .page-header .btn {
-        margin-left: .5rem;
-    }
+        .table th,
+        .table td {
+            padding: .55rem .75rem;
+            vertical-align: middle;
+        }
+
+            .table td.wrap {
+                white-space: normal;
+            }
 
     .remove-row {
         cursor: pointer;
@@ -44,18 +50,9 @@
 {% endblock %}
 
 {% block content %}
-<!-- Header / breadcrumbs -->
-<div class="d-flex flex-column flex-lg-row justify-content-between
-              align-items-start align-items-lg-center mb-4 gap-3 page-header">
-    <h1 class="m-0">Artikelsuche</h1>
+<h1 class="mb-4">Artikelsuche</h1>
 
-    <div class="btn-group">
-        <a href="{{ url_for('index')      }}" class="btn btn-primary">Startseite</a>
-        <a href="{{ url_for('suppliers')  }}" class="btn btn-info">Lieferanten</a>
-    </div>
-</div>
-
-<!-- ───── search form ───── -->
+<!-- ───── Suchformular ───── -->
 <form id="search-form" class="mb-4" method="POST">
     {%- set queries = request.form.getlist('query[]') or [''] %}
     {%- set fields  = request.form.getlist('filter_by[]') or ['article_name'] %}
@@ -73,16 +70,14 @@
                 <select name="filter_by[]" class="form-select field-select">
                     {% for fld,label in [
                     ('article_name','Artikelname'),
-                    ('description','Beschreibung'),
-                    ('item_no_ext','Externe Art.-Nr.'),
-                    ('cost_type','Kostenart'),
-                    ('category','Kategorie'),
+                    ('description' ,'Beschreibung'),
+                    ('item_no_ext' ,'Externe Art.-Nr.'),
+                    ('cost_type'   ,'Kostenart'),
+                    ('category'    ,'Kategorie'),
                     ('supplier_number','Lieferanten‑Nr.'),
-                    ('supplier_name','Lieferantenname'),
-                    ('certification','Zertifizierung')] %}
-                    <option value="{{ fld }}" {% if fld==fields[i] %}selected{% endif %}>
-                        {{ label }}
-                    </option>
+                    ('supplier_name'  ,'Lieferantenname'),
+                    ('certification'  ,'Zertifizierung')] %}
+                    <option value="{{ fld }}" {% if fld==fields[i] %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -97,12 +92,38 @@
     <div class="row g-2 mt-2">
         <div class="col-auto"><button type="button" id="add-row" class="btn btn-outline-secondary">+</button></div>
         <div class="col-auto"><button class="btn btn-primary">Suchen</button></div>
-        <div class="col-auto"><a href="{{ url_for('all_articles') }}" class="btn btn-outline-secondary">Reset</a></div>
+        <div class="col-auto"><a href="{{ url_for('all_articles') }}" class="btn btn-outline-secondary">Zurücksetzen</a></div>
     </div>
 </form>
 
+<!-- ───── Ergebnis‑Tabelle ───── -->
 <div class="table-wrapper shadow-sm rounded-2 bg-white p-3">
-    {% include "article_table.html" %}
+    <table class="table table-hover table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>Artikelname</th>
+                <th>Kostenart</th>
+                <th>Kategorie</th>
+                <th class="wrap">Beschreibung</th>
+                <th>Abmessung</th>
+                <th>Externe&nbsp;Nr.</th>
+                <th>Verkaufseinheit</th>
+                <th>Einheiten&nbsp;/&nbsp;VE</th>
+                <th>Zert.</th>
+                <th class="text-nowrap">
+                    VE‑Preis<br><small>(Min&nbsp;/&nbsp;Max&nbsp;/&nbsp;Ø&nbsp;€)</small>
+                </th>
+                <th class="text-nowrap">
+                    Stückpreis<br><small>(Min&nbsp;/&nbsp;Max&nbsp;/&nbsp;Ø&nbsp;€/Stk)</small>
+                </th>
+                <th>Lieferant</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% include "article_table_rows.html" %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}
 
@@ -110,72 +131,55 @@
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 
-<!-- your custom logic -->
 <script>
-  $(function () {
-      const API_URL = "{{ API_URL }}";              // injected by Flask
-      const $ = s => document.querySelector(s);     // handy shortcut
+$(function () {
+  const API_URL = "{{ API_URL }}";
+  const $q = s => document.querySelector(s);
 
-      /* ---------- debounced autocomplete ---------- */
-      function attachAutocomplete($el){
-          let timer;
-          $($el).autocomplete({
-              minLength:3,
-              delay:0,
-              source(req,res){
-                  clearTimeout(timer);
-                  timer = setTimeout(()=> {
-                      $.ajax({
-                          url : `${API_URL}/article_suggestions`,
-                          data: { q: req.term.trim() },
-                          dataType:"json",
-                          success:res, error:()=>res([])
-                      });
-                  },250);
-              },
-              select(e,ui){ $(this).val(ui.item.value.trim()); return false; }
-          });
-      }
-      attachAutocomplete($('.query-input'));
+  /* ---------- Autocomplete ---------- */
+  function attachAutocomplete(el){
+    let timer;
+    $(el).autocomplete({
+      minLength:3, delay:0,
+      source(req,res){
+        clearTimeout(timer);
+        timer = setTimeout(()=>$.getJSON(
+          `${API_URL}/article_suggestions`, {q:req.term.trim()}
+        ).done(res).fail(()=>res([])),250);
+      },
+      select(_e,ui){ $(this).val(ui.item.value.trim()); return false; }
+    });
+  }
+  attachAutocomplete($('.query-input'));
 
-      /* ---------- dynamic rows ---------- */
-      $('#add-row').addEventListener('click',()=>{
-          const clone = document.querySelector('.search-row').cloneNode(true);
-          clone.querySelector('input').value = '';
-          clone.querySelector('.remove-row').classList.remove('d-none');
-          document.getElementById('filter-container').appendChild(clone);
-          attachAutocomplete(clone.querySelector('.query-input'));
-      });
-
-      document.addEventListener('click',e=>{
-          if(e.target.classList.contains('remove-row')){
-              e.target.closest('.search-row').remove();
-          }
-      });
-
-      /* ---------- save certification inline ---------- */
-      document.addEventListener('change', e=>{
-          if(!e.target.classList.contains('cert-select')) return;
-
-          const select   = e.target;
-          const artId    = select.dataset.articleId;
-          const newValue = select.value;
-          if(!artId) return alert('Keine gültige Artikel‑ID gefunden.');
-
-          const spinner = document.createElement('div');
-          spinner.className = 'spinner-border spinner-sm';
-          select.after(spinner);
-          select.classList.add('loading-select');
-
-          fetch(`${API_URL}/update_article_partial/${artId}`,{
-              method:'PATCH',
-              headers:{'Content-Type':'application/json'},
-              body:JSON.stringify({ certification:newValue })
-          }).finally(()=>{
-              spinner.remove();
-              select.classList.remove('loading-select');
-          }).catch(r=>r.text().then(t=>alert(`Speichern fehlgeschlagen (${r.status}): ${t}`)));
-      });
+  /* ---------- dynamische Zeilen ---------- */
+  $('#add-row').on('click',()=>{
+    const clone = document.querySelector('.search-row').cloneNode(true);
+    clone.querySelector('input').value = '';
+    clone.querySelector('.remove-row').classList.remove('d-none');
+    document.getElementById('filter-container').appendChild(clone);
+    attachAutocomplete(clone.querySelector('.query-input'));
   });
+  $(document).on('click','.remove-row',function(){ $(this).closest('.search-row').remove(); });
+
+  /* ---------- Zertifizierung speichern ---------- */
+  $(document).on('change','.cert-select',function(){
+    const $sel   = $(this);
+    const artId  = $sel.data('articleId');
+    if(!artId) return alert('Keine gültige Artikel‑ID gefunden.');
+
+    const spinner = $('<div class="spinner-border spinner-sm" role="status"></div>');
+    $sel.after(spinner).addClass('loading-select');
+
+    $.ajax({
+      url : `${API_URL}/update_article_partial/${artId}`,
+      type: 'PATCH',
+      contentType:'application/json',
+      data: JSON.stringify({certification:$sel.val()}),
+      complete(){ spinner.remove(); $sel.removeClass('loading-select'); },
+      error  : (xhr)=>alert(`Speichern fehlgeschlagen (${xhr.status}): ${xhr.responseText}`)
+    });
+  });
+});
 </script>
 {% endblock %}
