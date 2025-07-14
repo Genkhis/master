@@ -1,207 +1,184 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alle Artikel</title>
+{# templates/all-articles.html  #}
+{% extends "base.html" %}
+{% block title %}Alle Artikel{% endblock %}
 
-    <!-- Bootstrap & jQuery-UI -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+{% block style %}
+<!-- jQuery‑UI theme (only this page needs it) -->
+<link rel="stylesheet"
+      href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
 
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
 
-        .table-wrapper {
-            overflow-x: auto;
-        }
+    .table-wrapper {
+        overflow-x: auto;
+    }
 
-        .table {
-            font-size: .875rem;
-        }
+    .table {
+        font-size: .875rem;
+    }
 
-        .page-header .btn {
-            margin-left: .5rem;
-        }
+    .page-header .btn {
+        margin-left: .5rem;
+    }
 
-        .remove-row {
-            cursor: pointer;
-            color: #dc3545;
-        }
+    .remove-row {
+        cursor: pointer;
+        color: #dc3545;
+    }
 
-        /* Spinner + loading state for Zertifizierung dropdown */
-        .spinner-sm {
-            width: 1rem;
-            height: 1rem;
-            vertical-align: text-bottom;
-            margin-left: .5rem;
-        }
+    /* Spinner + loading state for Zertifizierung dropdown */
+    .spinner-sm {
+        width: 1rem;
+        height: 1rem;
+        vertical-align: text-bottom;
+        margin-left: .5rem;
+    }
 
-        .loading-select {
-            opacity: .7;
-            pointer-events: none;
-        }
-    </style>
-</head>
-<body class="container-fluid py-4">
+    .loading-select {
+        opacity: .7;
+        pointer-events: none;
+    }
+</style>
+{% endblock %}
 
-    <!-- Header -->
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-4 gap-3 page-header">
-        <h1 class="m-0">Artikelsuche</h1>
-        <div class="btn-group">
-            <a href="{{ url_for('index') }}" class="btn btn-primary">Startseite</a>
-            <a href="{{ url_for('suppliers') }}" class="btn btn-info">Lieferanten</a>
-        </div>
+{% block content %}
+<!-- Header / breadcrumbs -->
+<div class="d-flex flex-column flex-lg-row justify-content-between
+              align-items-start align-items-lg-center mb-4 gap-3 page-header">
+    <h1 class="m-0">Artikelsuche</h1>
+
+    <div class="btn-group">
+        <a href="{{ url_for('index')      }}" class="btn btn-primary">Startseite</a>
+        <a href="{{ url_for('suppliers')  }}" class="btn btn-info">Lieferanten</a>
     </div>
+</div>
 
-    <!-- Search form -->
-    <form id="search-form" class="mb-4" method="POST">
-        {%- set queries = request.form.getlist('query[]') or [''] %}
-        {%- set fields  = request.form.getlist('filter_by[]') or ['article_name'] %}
+<!-- ───── search form ───── -->
+<form id="search-form" class="mb-4" method="POST">
+    {%- set queries = request.form.getlist('query[]') or [''] %}
+    {%- set fields  = request.form.getlist('filter_by[]') or ['article_name'] %}
 
-        <div id="filter-container">
-            {%- for i in range(queries|length) %}
-            <div class="row g-2 align-items-center search-row">
-                <!-- Suchbegriff -->
-                <div class="col-12 col-md-6">
-                    <input name="query[]" class="form-control query-input"
-                           placeholder="Begriff eingeben"
-                           value="{{ queries[i] }}">
-                </div>
-                <!-- Feldwahl -->
-                <div class="col-8 col-md-3">
-                    <select name="filter_by[]" class="form-select field-select">
-                        {% for fld,label in [
-                        ('article_name','Artikelname'),
-                        ('description','Beschreibung'),
-                        ('item_no_ext','Externe Art.-Nr.'),
-                        ('cost_type','Kostenart'),
-                        ('category','Kategorie'),
-                        ('supplier_number','Lieferanten-Nr.'),
-                        ('supplier_name','Lieferantenname'),
-                        ('certification','Zertifizierung')
-                        ] %}
-                        <option value="{{ fld }}" {% if fld==fields[i] %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <!-- Entfernen -->
-                <div class="col-2 col-md-1 d-flex align-items-center">
-                    <span class="remove-row ms-1 {% if i==0 %}d-none{% endif %}">&times;</span>
-                </div>
+    <div id="filter-container">
+        {%- for i in range(queries|length) %}
+        <div class="row g-2 align-items-center search-row">
+            <div class="col-12 col-md-6">
+                <input name="query[]" class="form-control query-input"
+                       placeholder="Begriff eingeben"
+                       value="{{ queries[i] }}">
             </div>
-            {%- endfor %}
-        </div>
 
-        <div class="row g-2 mt-2">
-            <div class="col-auto"><button type="button" id="add-row" class="btn btn-outline-secondary">+</button></div>
-            <div class="col-auto"><button class="btn btn-primary">Suchen</button></div>
-            <div class="col-auto"><a href="{{ url_for('all_articles') }}" class="btn btn-outline-secondary">Reset</a></div>
-        </div>
-    </form>
+            <div class="col-8 col-md-3">
+                <select name="filter_by[]" class="form-select field-select">
+                    {% for fld,label in [
+                    ('article_name','Artikelname'),
+                    ('description','Beschreibung'),
+                    ('item_no_ext','Externe Art.-Nr.'),
+                    ('cost_type','Kostenart'),
+                    ('category','Kategorie'),
+                    ('supplier_number','Lieferanten‑Nr.'),
+                    ('supplier_name','Lieferantenname'),
+                    ('certification','Zertifizierung')] %}
+                    <option value="{{ fld }}" {% if fld= =fields[i] %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-    <!-- Article table -->
-    <div class="table-wrapper shadow-sm rounded-2 bg-white p-3">
-        {% include 'article_table.html' %}
+            <div class="col-2 col-md-1 d-flex align-items-center">
+                <span class="remove-row ms-1 {% if i==0 %}d-none{% endif %}">&times;</span>
+            </div>
+        </div>
+        {%- endfor %}
     </div>
 
-    <!-- JS libs -->
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="row g-2 mt-2">
+        <div class="col-auto"><button type="button" id="add-row" class="btn btn-outline-secondary">+</button></div>
+        <div class="col-auto"><button class="btn btn-primary">Suchen</button></div>
+        <div class="col-auto"><a href="{{ url_for('all_articles') }}" class="btn btn-outline-secondary">Reset</a></div>
+    </div>
+</form>
 
-    <script>
-    $(function () {
-        /* API base URL injected by Flask */
-        const BASE_API_URL = "{{ API_URL }}";
+<!-- ───── result table (rendered server‑side include) ───── -->
+<div class="table-wrapper shadow-sm rounded-2 bg-white p-3">
+    {% include "article_table.html" %}
+</div>
+{% endblock %}
 
-        /* -- Debounced autocomplete ------------------------------------ */
-        function attachAutocomplete($el) {
-            let timer;
-            $el.autocomplete({
-                minLength: 3,
-                delay: 0,                   // we'll handle our own debounce
-                source(request, response) {
-                    clearTimeout(timer);
-                    timer = setTimeout(() => {
-                        $.ajax({
-                            url: `${BASE_API_URL}/article_suggestions`,
-                            data: { q: $.trim(request.term) },
-                            dataType: "json",
-                            /* uncomment next two lines if endpoint gets protected */
-                            // headers: {
-                            //     Authorization: `Bearer ${localStorage.getItem('jwt') || ''}`
-                            // },
-                            success: response,
-                            error: () => response([])
-                        });
-                    }, 250);                 // 250 ms debounce
-                },
-                select(e, ui) {
-                    $(this).val(ui.item.value.trim());
-                    return false;
-                }
-            });
-        }
+{% block script %}
+<!-- JS libs required only here -->
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 
-        attachAutocomplete($('.query-input'));
+<!-- your custom logic -->
+<script>
+  $(function () {
+      const API_URL = "{{ API_URL }}";              // injected by Flask
+      const $ = s => document.querySelector(s);     // handy shortcut
 
-        /* -- Dynamic rows --------------------------------------------- */
-        $('#add-row').on('click', () => {
-            const $clone = $('.search-row').first().clone(true);
-            $clone.find('input').val('');
-            $clone.find('.remove-row').removeClass('d-none');
-            $('#filter-container').append($clone);
-            attachAutocomplete($clone.find('.query-input'));
-        });
+      /* ---------- debounced autocomplete ---------- */
+      function attachAutocomplete($el){
+          let timer;
+          $($el).autocomplete({
+              minLength:3,
+              delay:0,
+              source(req,res){
+                  clearTimeout(timer);
+                  timer = setTimeout(()=> {
+                      $.ajax({
+                          url : `${API_URL}/article_suggestions`,
+                          data: { q: req.term.trim() },
+                          dataType:"json",
+                          success:res, error:()=>res([])
+                      });
+                  },250);
+              },
+              select(e,ui){ $(this).val(ui.item.value.trim()); return false; }
+          });
+      }
+      attachAutocomplete($('.query-input'));
 
-        $(document).on('click', '.remove-row', function () {
-            $(this).closest('.search-row').remove();
-        });
+      /* ---------- dynamic rows ---------- */
+      $('#add-row').addEventListener('click',()=>{
+          const clone = document.querySelector('.search-row').cloneNode(true);
+          clone.querySelector('input').value = '';
+          clone.querySelector('.remove-row').classList.remove('d-none');
+          document.getElementById('filter-container').appendChild(clone);
+          attachAutocomplete(clone.querySelector('.query-input'));
+      });
 
-        $('#search-form').on('submit', function () {
-            $(this).find('.query-input').each(function () {
-                this.value = $.trim(this.value);
-            });
-        });
+      document.addEventListener('click',e=>{
+          if(e.target.classList.contains('remove-row')){
+              e.target.closest('.search-row').remove();
+          }
+      });
 
-        /* -- Inline certification save -------------------------------- */
-        $(document).on('change', '.cert-select', function () {
-            const $select = $(this);
-            const artId   = $select.data('articleId');
-            const newVal  = $select.val();
-            if (!artId) return alert('Keine gültige Artikel-ID gefunden.');
+      /* ---------- save certification inline ---------- */
+      document.addEventListener('change', e=>{
+          if(!e.target.classList.contains('cert-select')) return;
 
-            const spinnerId = `cert-spinner-${artId}`;
-            if (!$('#' + spinnerId).length) {
-                $select.after(
-                    `<div id="${spinnerId}" class="spinner-border spinner-sm" role="status" aria-hidden="true"></div>`
-                );
-            }
-            $select.addClass('loading-select');
+          const select   = e.target;
+          const artId    = select.dataset.articleId;
+          const newValue = select.value;
+          if(!artId) return alert('Keine gültige Artikel‑ID gefunden.');
 
-            $.ajax({
-                url: `${BASE_API_URL}/update_article_partial/${artId}`,
-                type: 'PATCH',
-                contentType: 'application/json',
-                data: JSON.stringify({ certification: newVal }),
-                /* headers: { Authorization: `Bearer ${localStorage.getItem('jwt') || ''}` }, */
-                complete() {
-                    $select.removeClass('loading-select');
-                    $(`#${spinnerId}`).remove();
-                },
-                error(xhr) {
-                    alert(`Speichern fehlgeschlagen (${xhr.status}): ${xhr.responseText}`);
-                },
-                success() {
-                    // optional success toast
-                }
-            });
-        });
-    });
-    </script>
-</body>
-</html>
+          const spinner = document.createElement('div');
+          spinner.className = 'spinner-border spinner-sm';
+          select.after(spinner);
+          select.classList.add('loading-select');
+
+          fetch(`${API_URL}/update_article_partial/${artId}`,{
+              method:'PATCH',
+              headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({ certification:newValue })
+          }).finally(()=>{
+              spinner.remove();
+              select.classList.remove('loading-select');
+          }).catch(r=>r.text().then(t=>alert(`Speichern fehlgeschlagen (${r.status}): ${t}`)));
+      });
+  });
+</script>
+{% endblock %}
