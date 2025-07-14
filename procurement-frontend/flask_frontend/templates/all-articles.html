@@ -2,6 +2,7 @@
 {% extends "base.html" %}
 {% block title %}Alle Artikel{% endblock %}
 
+{# --------------------- Seite‑spezifisches CSS -------------------- #}
 {% block style %}
 <link rel="stylesheet"
       href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
@@ -11,7 +12,7 @@
         background: #f8f9fa;
     }
 
-    /* Such‑/Tabellen‑Layout */
+    /* Tabelle & Suchbereich */
     .table-wrapper {
         overflow-x: auto;
     }
@@ -30,11 +31,13 @@
                 white-space: normal;
             }
 
+    /* +/− Suchzeile */
     .remove-row {
         cursor: pointer;
         color: #dc3545;
     }
 
+    /* Spinner beim Speichern */
     .spinner-sm {
         width: 1rem;
         height: 1rem;
@@ -49,10 +52,12 @@
 </style>
 {% endblock %}
 
+{# --------------------------- Inhalt ------------------------------ #}
 {% block content %}
+
 <h1 class="mb-4">Artikelsuche</h1>
 
-<!-- ───── Suchformular ───── -->
+<!-- ───── Such­formular ───── -->
 <form id="search-form" class="mb-4" method="POST">
     {%- set queries = request.form.getlist('query[]') or [''] %}
     {%- set fields  = request.form.getlist('filter_by[]') or ['article_name'] %}
@@ -69,15 +74,15 @@
             <div class="col-8 col-md-3">
                 <select name="filter_by[]" class="form-select field-select">
                     {% for fld,label in [
-                    ('article_name','Artikelname'),
-                    ('description' ,'Beschreibung'),
-                    ('item_no_ext' ,'Externe Art.-Nr.'),
-                    ('cost_type'   ,'Kostenart'),
-                    ('category'    ,'Kategorie'),
+                    ('article_name'   ,'Artikelname'),
+                    ('description'    ,'Beschreibung'),
+                    ('item_no_ext'    ,'Externe Art.-Nr.'),
+                    ('cost_type'      ,'Kostenart'),
+                    ('category'       ,'Kategorie'),
                     ('supplier_number','Lieferanten‑Nr.'),
                     ('supplier_name'  ,'Lieferantenname'),
                     ('certification'  ,'Zertifizierung')] %}
-                    <option value="{{ fld }}" {% if fld==fields[i] %}selected{% endif %}>{{ label }}</option>
+                    <option value="{{ fld }}" {% if fld= =fields[i] %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -90,9 +95,13 @@
     </div>
 
     <div class="row g-2 mt-2">
-        <div class="col-auto"><button type="button" id="add-row" class="btn btn-outline-secondary">+</button></div>
+        <div class="col-auto">
+            <button type="button" id="add-row" class="btn btn-outline-secondary">+</button>
+        </div>
         <div class="col-auto"><button class="btn btn-primary">Suchen</button></div>
-        <div class="col-auto"><a href="{{ url_for('all_articles') }}" class="btn btn-outline-secondary">Zurücksetzen</a></div>
+        <div class="col-auto">
+            <a href="{{ url_for('all_articles') }}" class="btn btn-outline-secondary">Zurücksetzen</a>
+        </div>
     </div>
 </form>
 
@@ -121,12 +130,14 @@
             </tr>
         </thead>
         <tbody>
-            {% include "article_table_rows.html" %}
+            {# nutzt deine existierende Zeilen‑Teilvorlage #}
+            {% include "article_table.html" %}
         </tbody>
     </table>
 </div>
 {% endblock %}
 
+{# --------------------------- Skript ------------------------------ #}
 {% block script %}
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
@@ -134,50 +145,57 @@
 <script>
 $(function () {
   const API_URL = "{{ API_URL }}";
-  const $q = s => document.querySelector(s);
 
   /* ---------- Autocomplete ---------- */
-  function attachAutocomplete(el){
+  function attachAutocomplete(el) {
     let timer;
     $(el).autocomplete({
-      minLength:3, delay:0,
-      source(req,res){
+      minLength: 3,
+      delay: 0,
+      source(request, response) {
         clearTimeout(timer);
-        timer = setTimeout(()=>$.getJSON(
-          `${API_URL}/article_suggestions`, {q:req.term.trim()}
-        ).done(res).fail(()=>res([])),250);
+        timer = setTimeout(() => {
+          $.getJSON(`${API_URL}/article_suggestions`, { q: request.term.trim() })
+            .done(response)
+            .fail(() => response([]));
+        }, 250);
       },
-      select(_e,ui){ $(this).val(ui.item.value.trim()); return false; }
+      select(_e, ui) {
+        $(this).val(ui.item.value.trim());
+        return false;
+      }
     });
   }
   attachAutocomplete($('.query-input'));
 
-  /* ---------- dynamische Zeilen ---------- */
-  $('#add-row').on('click',()=>{
-    const clone = document.querySelector('.search-row').cloneNode(true);
-    clone.querySelector('input').value = '';
-    clone.querySelector('.remove-row').classList.remove('d-none');
-    document.getElementById('filter-container').appendChild(clone);
-    attachAutocomplete(clone.querySelector('.query-input'));
+  /* ---------- Dynamische Filter‑Zeilen ---------- */
+  $('#add-row').on('click', () => {
+    const $clone = $('.search-row').first().clone(true);
+    $clone.find('input').val('');
+    $clone.find('.remove-row').removeClass('d-none');
+    $('#filter-container').append($clone);
+    attachAutocomplete($clone.find('.query-input'));
   });
-  $(document).on('click','.remove-row',function(){ $(this).closest('.search-row').remove(); });
+  $(document).on('click', '.remove-row', function () {
+    $(this).closest('.search-row').remove();
+  });
 
-  /* ---------- Zertifizierung speichern ---------- */
-  $(document).on('change','.cert-select',function(){
-    const $sel   = $(this);
-    const artId  = $sel.data('articleId');
-    if(!artId) return alert('Keine gültige Artikel‑ID gefunden.');
+  /* ---------- Zertifizierung inline speichern ---------- */
+  $(document).on('change', '.cert-select', function () {
+    const $sel  = $(this);
+    const artId = $sel.data('articleId');
+    if (!artId) return alert('Keine gültige Artikel‑ID gefunden.');
 
-    const spinner = $('<div class="spinner-border spinner-sm" role="status"></div>');
-    $sel.after(spinner).addClass('loading-select');
+    const $spinner = $('<div class="spinner-border spinner-sm" role="status"></div>');
+    $sel.after($spinner).addClass('loading-select');
 
     $.ajax({
-      url : `${API_URL}/update_article_partial/${artId}`,
-      type: 'PATCH',
-      contentType:'application/json',
-      data: JSON.stringify({certification:$sel.val()}),
-      complete(){ spinner.remove(); $sel.removeClass('loading-select'); },
-      error  : (xhr)=>alert(`Speichern fehlgeschlagen (${xhr.status}): ${xhr.responseText}`)
+      url        : `${API_URL}/update_article_partial/${artId}`,
+      type       : 'PATCH',
+      contentType: 'application/json',
+      data       : JSON.stringify({ certification: $sel.val() }),
+      complete() { $spinner.remove(); $sel.removeClass('loading-select'); },
+      error(xhr) { alert(`Speichern fehlgeschlagen (${xhr.status}): ${xhr.responseText}`); }
     });
   });
 });
