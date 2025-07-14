@@ -12,6 +12,11 @@
         background: #f8f9fa;
     }
 
+    /* nur auf dieser Seite: container über gesamte Breite */
+    .container {
+        max-width: 100% !important;
+    }
+
     /* Tabelle & Suchbereich */
     .table-wrapper {
         overflow-x: auto;
@@ -19,11 +24,12 @@
 
     .table {
         font-size: .95rem;
+        min-width: 1600px;
     }
-
+        /* 👉 breiter */
         .table th,
         .table td {
-            padding: .55rem .75rem;
+            padding: .6rem .85rem;
             vertical-align: middle;
         }
 
@@ -82,7 +88,7 @@
                     ('supplier_number','Lieferanten‑Nr.'),
                     ('supplier_name'  ,'Lieferantenname'),
                     ('certification'  ,'Zertifizierung')] %}
-                    <option value="{{ fld }}" {% if fld==fields[i] %}selected{% endif %}>{{ label }}</option>
+                    <option value="{{ fld }}" {% if fld= =fields[i] %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -130,7 +136,6 @@
             </tr>
         </thead>
         <tbody>
-            {# nutzt deine existierende Zeilen‑Teilvorlage #}
             {% include "article_table.html" %}
         </tbody>
     </table>
