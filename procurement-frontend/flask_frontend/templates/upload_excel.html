@@ -1,25 +1,51 @@
-{# templates/upload_excel.html #}
 {% extends "base.html" %}
-{% block title %}Excel‑Datei hochladen{% endblock %}
+{% block title %}Excel‑Import{% endblock %}
 
 {% block content %}
-<h3 class="mb-4">Excel‑Datei hochladen</h3>
+<h3 class="mb-4">Excel‑Liste hochladen</h3>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% for cat,msg in messages %}
-<div class="alert alert-{{ cat }} alert-dismissible fade show">
-    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+{# ───── Flash‑Messages (Fehler / Erfolg) ───── #}
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}
+    {% for cat, msg in msgs %}
+<div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
+    {{ msg }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
-  {% endfor %}
+    {% endfor %}
+  {% endif %}
 {% endwith %}
 
-<form method="POST" enctype="multipart/form-data" class="col-md-6 col-lg-4">
+{# ───── Detail‑Infos: übersprungene Lieferanten ───── #}
+{% if skipped_suppliers %}
+<div class="alert alert-warning">
+    <strong>Folgende Lieferanten fehlen in der Datenbank und wurden&nbsp;übersprungen:</strong>
+    <ul class="mb-0">
+        {% for sup in skipped_suppliers %}
+        <li><code>{{ sup }}</code></li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<form method="post"
+      enctype="multipart/form-data"
+      class="border p-4 rounded shadow-sm bg-light">
+
     <div class="mb-3">
-        <label for="file" class="form-label">Excel‑Datei auswählen</label>
-        <input type="file" name="file" id="file" class="form-control"
-               accept=".xlsx,.xls" required>
+        <label for="file" class="form-label fw-semibold">Excel‑Datei auswählen</label>
+        <input type="file"
+               class="form-control"
+               id="file" name="file"
+               accept=".xlsx,.xls"
+               required>
+        <div class="form-text">
+            Unterstützte Formate: <code>.xlsx</code> / <code>.xls</code>
+        </div>
     </div>
-    <button type="submit" class="btn btn-primary">Hochladen</button>
-    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary ms-2">Abbrechen</a>
+
+    <button type="submit" class="btn btn-success">
+        Hochladen
+    </button>
 </form>
 {% endblock %}

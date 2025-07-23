@@ -402,23 +402,46 @@ def supplier_articles(supplier_number):
 # ------------------------------------------------------------------
 @app.route("/upload_excel", methods=["GET", "POST"])
 def upload_excel():
+    skipped_suppliers: list[str] = []
+    upload_summary:   str | None = None          # „processed … row(s)“
+    error_msg:        str | None = None
+
     if request.method == "POST":
-        file = request.files.get("file")
-        if not file or file.filename == "":
-            flash("No file selected", "danger")
-            return redirect(request.url)
+        file_obj = request.files.get("file")
 
-        files = {"file": (file.filename, file.read(), file.content_type)}
-        resp  = requests.post(f"{BASE_API_URL}/upload_articles", files=files)
+        if not file_obj or file_obj.filename == "":
+            error_msg = "❌ Keine Datei ausgewählt."
+        else:
+            files = {"file": (file_obj.filename, file_obj.read(),
+                              file_obj.content_type)}
+            try:
+                resp = requests.post(f"{BASE_API_URL}/upload_articles",
+                                     files=files, timeout=API_TIMEOUT)
+            except requests.Timeout:
+                resp = None
+                error_msg = "Zeitüberschreitung beim Aufruf der API."
+            except requests.RequestException as exc:
+                resp = None
+                error_msg = f"API‑Fehler: {exc}"
 
-        flash(
-            "Excel file uploaded successfully!" if resp.ok
-            else f"Error uploading file: {resp.text}",
-            "success" if resp.ok else "danger"
-        )
-        return redirect(url_for("index"))
+            if resp and resp.ok:
+                data             = resp.json()
+                upload_summary   = data.get("message") or "Import abgeschlossen."
+                skipped_suppliers = data.get("missing_suppliers", [])
+                flash(upload_summary, "success")
+            elif resp:
+                # API lieferte Fehlercode
+                error_msg = f"❌ Import fehlgeschlagen: {resp.text}"
 
-    return render_template("upload_excel.html")
+        if error_msg:
+            flash(error_msg, "danger")
+
+    # Render *immer* dieselbe Seite – ggf. mit Result‑Details
+    return render_template(
+        "upload_excel.html",
+        skipped_suppliers = skipped_suppliers,
+        upload_summary    = upload_summary,
+    )
 
 # ------------------------------------------------------------------
 # Upload suppliers Excel
