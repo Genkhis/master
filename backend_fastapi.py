@@ -422,7 +422,6 @@ def list_articles(
         "cost_type", "category", "supplier_number", "certification"  
 
     }
-
     # 1) Basissuche aufbauen
     if query:
         if filter_by == "supplier_name":
@@ -728,7 +727,7 @@ REQUIRED_COLUMNS: set[str] = {
     "sale_unit", "units_per_sale_unit",
     "sale_unit_price_eur", "unit_price_eur",
     "quantity", "amount", "delivery",
-    "unit_per_package",          
+    "unit_per_package",
     "supplier_number", "costplace"
 }
 
@@ -753,12 +752,12 @@ async def upload_articles(
     file: UploadFile = File(...),
     db:   Session    = Depends(get_db)
 ):
-    # 0) read + normalise headers
+    # 0) Datei lesen + Header normalisieren
     df = pd.read_excel(BytesIO(await file.read()), engine="openpyxl")
     df.columns = [c.strip().lower() for c in df.columns]
     df = df.fillna("")
 
-    # 1) header validation
+    # 1) Header‑Validierung
     missing = REQUIRED_COLUMNS - set(df.columns)
     if missing:
         raise HTTPException(
@@ -766,7 +765,7 @@ async def upload_articles(
             detail=f"Pflichtspalte(n) fehlen: {', '.join(sorted(missing))}"
         )
 
-    # 2) type conversions
+    # 2) Typkonvertierungen
     num_cols = [
         "units_per_sale_unit", "sale_unit_price_eur", "unit_price_eur",
         "quantity", "amount", "unit_per_package"
@@ -775,21 +774,18 @@ async def upload_articles(
         df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
     df["delivery"] = pd.to_datetime(df["delivery"], errors="coerce")
 
-    inserted_ids: list[int]  = []
+    inserted_ids: list[int]   = []
     missing_suppliers: set[str] = set()
-    cert_errors: list[str]   = []
 
-    # 3) iterate rows
+    # 3) Zeilen iterieren
     for _, row in df.iterrows():
-        art_no   = row["article_number"]
-        supp_no  = str(row["supplier_number"]).strip() or None
-        cert_raw = str(row.get("certification", "-")).strip().upper() or "-"
-        if cert_raw not in ALLOWED_CERTS:
-            cert_errors.append(f"{art_no}/{supp_no or 'n/a'} -> {cert_raw}")
-            continue                                   # skip invalid rows
+        art_no  = row["article_number"]
+        supp_no = str(row["supplier_number"]).strip() or None
 
-        # unknown supplier → collect & skip
-        if supp_no and not db.query(Supplier).filter_by(supplier_number=supp_no).first():
+        # unbekannter Lieferant → sammeln & überspringen
+        if supp_no and not db.query(Supplier)\
+                             .filter_by(supplier_number=supp_no)\
+                             .first():
             missing_suppliers.add(supp_no)
             continue
 
@@ -797,7 +793,7 @@ async def upload_articles(
                  .filter_by(article_number=art_no, supplier_number=supp_no)
                  .first())
 
-        # ─────────── create master if absent ───────────
+        # ─────────── Anlage Stammsatz, falls nicht vorhanden ───────────
         if not art:
             art = Article(
                 article_number       = art_no,
@@ -812,16 +808,16 @@ async def upload_articles(
                 sale_unit            = row["sale_unit"],
                 units_per_sale_unit  = row["units_per_sale_unit"],
                 unit_per_package     = int(row["unit_per_package"] or 1),
-                certification        = cert_raw,       # ← NEW
+                certification        = "-",          # Zertifikat bleibt Standard
             )
-            db.add(art); db.commit(); db.refresh(art)
-
-        # ─────────── otherwise update certification if changed ───────────
-        elif art.certification != cert_raw:
-            art.certification = cert_raw
+            db.add(art)
             db.commit()
+            db.refresh(art)
 
-        # always add price row
+        # ─────────── bestehender Artikel: Zertifikat unverändert ───────────
+        # keine Aktion – Zertifizierung wird ausschließlich manuell gepflegt
+
+        # Preiszeile anlegen / anhängen
         create_price_record(
             db                 = db,
             article_id         = art.article_id,
@@ -832,23 +828,20 @@ async def upload_articles(
             quantity           = float(row["quantity"] or 0),
             order_number       = row["order_number"] or None,
             delivery           = row["delivery"]   or None,
-            costplace          = (row["costplace"] if str(row["costplace"]).strip()
-                                  else None),
+            costplace          = (row["costplace"]
+                                  if str(row["costplace"]).strip() else None),
         )
         inserted_ids.append(art.article_id)
 
-    # 4) summary
+    # 4) Zusammenfassung
     msg = f"processed {len(inserted_ids)} row(s)"
     if missing_suppliers:
         msg += f", skipped {len(missing_suppliers)} (unknown supplier)"
-    if cert_errors:
-        msg += f", skipped {len(cert_errors)} (invalid certification)"
 
     return {
         "message"          : msg,
         "article_ids"      : inserted_ids,
         "missing_suppliers": sorted(missing_suppliers),
-        "cert_errors"      : cert_errors,
     }
 
 
