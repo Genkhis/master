@@ -2,50 +2,51 @@
     <thead class="table-dark">
         <tr>
             <th>ID</th>
-            <th>Article&nbsp;name</th>
-            <th>Cost&nbsp;type</th>
-            <th>Category</th>
-            <th>Description</th>
-            <th>Dimension</th>
-            <th>External&nbsp;No.</th>
-            <th>Sales&nbsp;unit</th>
-            <th>Units&nbsp;per&nbsp;SU</th>
-            <th>Cert.</th>
-            <th>SU&nbsp;price<br>(Min/Max/Avg&nbsp;€)</th>
-            <th>Unit&nbsp;price<br>(Min/Max/Avg&nbsp;€/pc)</th>
-            <th>Supplier</th>
+            <th>Artikelname</th>
+            <th>Kostenart</th>
+            <th>Kategorie</th>
+            <th>Beschreibung</th>
+            <th>Abmessung</th>
+            <th>Externe&nbsp;Nr.</th>
+            <th>Verkaufseinheit</th>
+            <th>Einheiten&nbsp;/&nbsp;VE</th>
+            <th>Zert.</th>
+            <th>VE‑Preis<br>(Min/Max/Ø&nbsp;€)</th>
+            <th>Stückpreis<br>(Min/Max/Ø&nbsp;€/Stk)</th>
+            <th>Lieferant</th>
+            <th>Aktion</th>        {# 🆕 Spalte #}
         </tr>
     </thead>
 
     <tbody>
         {% for art in articles %}
-        <tr>
+        <tr id="row-{{ art.article_id }}">
             <td>{{ art.article_id }}</td>
             <td>{{ art.article_name }}</td>
 
             <td>
                 <a href="{{ url_for('all_articles',
-                                    query=art.cost_type,
-                                    filter_by='cost_type') }}">
+                            query=art.cost_type,
+                            filter_by='cost_type') }}">
                     {{ art.cost_type }}
                 </a>
             </td>
 
             <td>
                 <a href="{{ url_for('all_articles',
-                                    query=art.category,
-                                    filter_by='category') }}">
+                            query=art.category,
+                            filter_by='category') }}">
                     {{ art.category }}
                 </a>
             </td>
 
-            <td>{{ art.description }}</td>
+            <td class="wrap">{{ art.description }}</td>
             <td>{{ art.dimension or "–" }}</td>
 
             <td>
                 <a href="{{ url_for('price_history',
-                                    supplier_number=art.supplier_number,
-                                    item_no_ext=art.item_no_ext) }}">
+                            supplier_number=art.supplier_number,
+                            item_no_ext=art.item_no_ext) }}">
                     {{ art.item_no_ext }}
                 </a>
             </td>
@@ -53,13 +54,13 @@
             <td>{{ art.sale_unit or "–" }}</td>
             <td>{{ art.units_per_sale_unit or "–" }}</td>
 
-            <!-- Certification drop-down --------------------------------- -->
+            {# ------- Zertifizierung drop‑down ------- #}
             <td style="min-width:7rem">
                 <select class="form-select form-select-sm cert-select"
                         data-article-id="{{ art.article_id }}">
                     {% for choice in ['-','LEED','EUTax','DGNB'] %}
                     <option value="{{ choice }}"
-                            {% if art.certification==choice %}selected{% endif %}>
+                            {% if art.certification= =choice %}selected{% endif %}>
                         {{ choice }}
                     </option>
                     {% endfor %}
@@ -80,9 +81,26 @@
 
             <td>
                 <a href="{{ url_for('supplier_articles',
-                                    supplier_number=art.supplier_number) }}">
+                            supplier_number=art.supplier_number) }}">
                     {{ art.supplier_number }} – {{ art.supplier_name or "–" }}
                 </a>
+            </td>
+
+            {# ------- Aktions‑Buttons ------- #}
+            <td class="text-nowrap">
+                <a class="btn btn-sm btn-outline-secondary me-1"
+                   title="Preis­historie"
+                   href="{{ url_for('price_history',
+                            supplier_number=art.supplier_number,
+                            item_no_ext=art.item_no_ext) }}">
+                    <i class="bi bi-clock-history"></i>
+                </a>
+
+                <button class="btn btn-sm btn-outline-danger del-btn"
+                        data-article-id="{{ art.article_id }}"
+                        title="Löschen">
+                    <i class="bi bi-trash"></i>
+                </button>
             </td>
         </tr>
         {% endfor %}

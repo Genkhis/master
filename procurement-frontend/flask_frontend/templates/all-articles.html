@@ -2,33 +2,28 @@
 {% extends "base.html" %}
 {% block title %}Alle Artikel{% endblock %}
 
-{# ---------------- Seite‑spezifisches CSS ---------------- #}
 {% block style %}
 <link rel="stylesheet"
       href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
-
 <style>
     body {
         background: #f8f9fa;
     }
 
-    /* Container über komplette Breite */
     .container {
         max-width: 100% !important;
     }
 
-    /* Tabelle */
     .table-wrapper {
         overflow-x: auto;
     }
 
     .table {
         font-size: .95rem;
-        min-width: 1600px; /* 👉 breiter */
+        min-width: 1800px;
     }
 
-        .table th,
-        .table td {
+        .table th, .table td {
             padding: .6rem .85rem;
             vertical-align: middle;
         }
@@ -37,13 +32,11 @@
                 white-space: normal;
             }
 
-    /* +/–‑Button in Suchzeilen */
     .remove-row {
         cursor: pointer;
         color: #dc3545;
     }
 
-    /* Spinner beim Speichern */
     .spinner-sm {
         width: 1rem;
         height: 1rem;
@@ -58,12 +51,10 @@
 </style>
 {% endblock %}
 
-{# ----------------------- Inhalt ------------------------ #}
 {% block content %}
-
 <h1 class="mb-4">Artikelsuche</h1>
 
-<!-- ─── Suchformular ─────────────────────────────────── -->
+{# ---------- Suchformular ---------- #}
 <form id="search-form" class="mb-4" method="POST">
     {%- set queries = request.form.getlist('query[]') or [''] %}
     {%- set fields  = request.form.getlist('filter_by[]') or ['article_name'] %}
@@ -73,10 +64,8 @@
         <div class="row g-2 align-items-center search-row">
             <div class="col-12 col-md-6">
                 <input name="query[]" class="form-control query-input"
-                       placeholder="Begriff eingeben"
-                       value="{{ queries[i] }}">
+                       placeholder="Begriff eingeben" value="{{ queries[i] }}">
             </div>
-
             <div class="col-8 col-md-3">
                 <select name="filter_by[]" class="form-select field-select">
                     {% for fld,label in [
@@ -88,14 +77,12 @@
                     ('supplier_number','Lieferanten‑Nr.'),
                     ('supplier_name'  ,'Lieferantenname'),
                     ('certification'  ,'Zertifizierung')] %}
-                    <option value="{{ fld }}"
-                            {% if fld==fields[i] %}selected{% endif %}>
+                    <option value="{{ fld }}" {% if fld= =fields[i] %}selected{% endif %}>
                         {{ label }}
                     </option>
                     {% endfor %}
                 </select>
             </div>
-
             <div class="col-2 col-md-1 d-flex align-items-center">
                 <span class="remove-row ms-1 {% if i==0 %}d-none{% endif %}">&times;</span>
             </div>
@@ -109,45 +96,20 @@
         </div>
         <div class="col-auto"><button class="btn btn-primary">Suchen</button></div>
         <div class="col-auto">
-            <a href="{{ url_for('all_articles') }}" class="btn btn-outline-secondary">
-                Zurücksetzen
-            </a>
+            <a href="{{ url_for('all_articles') }}" class="btn btn-outline-secondary">Zurücksetzen</a>
         </div>
     </div>
 </form>
 
-<!-- ─── Ergebnis‑Tabelle ─────────────────────────────── -->
+{# ---------- Ergebnis‑Tabelle ---------- #}
 <div class="table-wrapper shadow-sm rounded-2 bg-white p-3">
     <table class="table table-hover table-bordered">
-
-        <thead class="table-light">
-            <tr>
-                <th>ID</th>
-                <th>Artikelname</th>
-                <th>Kostenart</th>
-                <th>Kategorie</th>
-                <th class="wrap">Beschreibung</th>
-                <th>Abmessung</th>
-                <th>Externe&nbsp;Nr.</th>
-                <th>Verkaufseinheit</th>
-                <th>Einheiten&nbsp;/&nbsp;VE</th>
-                <th>Zert.</th>
-                <th class="text-nowrap">
-                    VE‑Preis<br><small>(Min&nbsp;/&nbsp;Max&nbsp;/&nbsp;Ø&nbsp;€)</small>
-                </th>
-                <th class="text-nowrap">
-                    Stückpreis<br><small>(Min&nbsp;/&nbsp;Max&nbsp;/&nbsp;Ø&nbsp;€/Stk)</small>
-                </th>
-                <th>Lieferant</th>
-            </tr>
-        </thead>
-
         <tbody>
             {% if articles %}
             {% include "article_table.html" %}
             {% else %}
             <tr>
-                <td colspan="13" class="text-center text-muted py-4">
+                <td colspan="14" class="text-center text-muted py-4">
                     Es wurden keine Ergebnisse für&nbsp;deine&nbsp;Suche&nbsp;gefunden.
                 </td>
             </tr>
@@ -157,14 +119,15 @@
 </div>
 {% endblock %}
 
-{# ----------------------- Skript ----------------------- #}
 {% block script %}
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 
 <script>
 $(function () {
-  const API_URL = "{{ API_URL }}";
+  const API_URL   = "{{ API_URL }}";
+  const bearer    = document.cookie.split(';')
+                      .find(c=>c.trim().startsWith('bearer='))?.split('=')[1] || '';
 
   /* ---------- Autocomplete ---------- */
   function attachAutocomplete(el){
@@ -183,7 +146,7 @@ $(function () {
   }
   attachAutocomplete($('.query-input'));
 
-  /* ---------- Dynamische Filterzeilen ---------- */
+  /* ---------- Dynamische Suchzeilen ---------- */
   $('#add-row').on('click',()=>{
     const $clone=$('.search-row').first().clone(true);
     $clone.find('input').val('');
@@ -195,7 +158,7 @@ $(function () {
     $(this).closest('.search-row').remove();
   });
 
-  /* ---------- Zertifizierung inline speichern ---------- */
+  /* ---------- Zertifizierung speichern ---------- */
   $(document).on('change','.cert-select',function(){
     const $sel=$(this);
     const artId=$sel.data('articleId');
@@ -207,10 +170,26 @@ $(function () {
     $.ajax({
       url:`${API_URL}/update_article_partial/${artId}`,
       type:'PATCH',
+      headers:{ Authorization:`Bearer ${bearer}` },
       contentType:'application/json',
       data:JSON.stringify({certification:$sel.val()}),
       complete(){ $spinner.remove(); $sel.removeClass('loading-select'); },
       error(xhr){ alert(`Speichern fehlgeschlagen (${xhr.status}): ${xhr.responseText}`); }
+    });
+  });
+
+  /* ---------- Löschen eines Artikels ---------- */
+  $(document).on('click','.del-btn',function(){
+    const artId=$(this).data('articleId');
+    if(!artId) return;
+    if(!confirm('Diesen Artikel wirklich löschen?')) return;
+
+    $.ajax({
+      url:`${API_URL}/delete_article/${artId}`,
+      type:'DELETE',
+      headers:{ Authorization:`Bearer ${bearer}` },
+      success(){ $('#row-'+artId).remove(); },
+      error(xhr){ alert(`Fehler (${xhr.status}): ${xhr.responseText}`); }
     });
   });
 });
