@@ -77,7 +77,7 @@
                     ('supplier_number','Lieferanten‑Nr.'),
                     ('supplier_name'  ,'Lieferantenname'),
                     ('certification'  ,'Zertifizierung')] %}
-                    <option value="{{ fld }}" {% if fld= =fields[i] %}selected{% endif %}>
+                    <option value="{{ fld }}" {% if fld==fields[i] %}selected{% endif %}>
                         {{ label }}
                     </option>
                     {% endfor %}
