@@ -1,27 +1,46 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Edit Article</title>
-</head>
-<body class="container mt-4">
-    <!-- Common header with Home and Suppliers buttons -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Edit Article</h1>
-        <div>
-            <a href="{{ url_for('index') }}" class="btn btn-primary">Home</a>
-            <a href="{{ url_for('suppliers') }}" class="btn btn-info">Suppliers</a>
-        </div>
+﻿{# templates/edit_article.html #}
+{% extends "base.html" %}
+{% block title %}Artikel bearbeiten{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">Artikel bearbeiten</h3>
+
+<form method="POST" class="row gy-3 col-lg-6">
+    <div class="col-12">
+        <label class="form-label">Artikel‑Nr.</label>
+        <input class="form-control" name="article_number"
+               value="{{ article.article_number }}" required>
     </div>
-    <form method="POST">
-        <input type="text" name="article_number" value="{{ article.article_number }}" required>
-        <input type="text" name="article_name" value="{{ article.article_name }}" required>
-        <textarea name="description">{{ article.description }}</textarea>
-        <input type="text" name="cost_type" value="{{ article.cost_type }}">
-        <input type="text" name="category" value="{{ article.category }}">
-        <!-- New Supplier Field -->
-        <input type="number" name="supplier_number" placeholder="Supplier Number" value="{{ article.supplier_number }}">
-        <button type="submit">Update</button>
-    </form>
-    <a href="{{ url_for('index') }}">Back</a>
-</body>
-</html>
+
+    <div class="col-12">
+        <label class="form-label">Name</label>
+        <input class="form-control" name="article_name"
+               value="{{ article.article_name }}" required>
+    </div>
+
+    <div class="col-12">
+        <label class="form-label">Beschreibung</label>
+        <textarea class="form-control" name="description" rows="2">{{ article.description }}</textarea>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label">Kostenart</label>
+        <input class="form-control" name="cost_type" value="{{ article.cost_type }}">
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Kategorie</label>
+        <input class="form-control" name="category" value="{{ article.category }}">
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label">Lieferanten‑Nr.</label>
+        <input class="form-control" name="supplier_number"
+               value="{{ article.supplier_number }}">
+    </div>
+
+    <div class="col-12 text-end">
+        <button class="btn btn-primary">Speichern</button>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary ms-2">Abbrechen</a>
+    </div>
+</form>
+{% endblock %}

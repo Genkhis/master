@@ -1,25 +1,38 @@
+{# templates/user_create.html #}
 {% extends "base.html" %}
 {% set edit_mode = request.args.get('id') %}
 {% block title %}{{ "Benutzer bearbeiten" if edit_mode else "Neuer Benutzer" }}{% endblock %}
 
+{% block style %}
+<style>
+    /* Form etwas breiter auf grossen Screens */
+    @media (min-width: 992px) {
+        #user-form {
+            max-width: 28rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <h3 class="mb-4">{{ "Benutzer bearbeiten" if edit_mode else "Neuer Benutzer" }}</h3>
 
-<form id="user-form" class="col-md-4">
+<form id="user-form">
     <div class="mb-3">
-        <label class="form-label">E-Mail</label>
+        <label class="form-label">E‑Mail</label>
         <input id="email" type="email" class="form-control" required>
     </div>
 
     <div class="mb-3">
         <label class="form-label">Passwort</label>
-        <input id="password" type="password" class="form-control" {{ "" if edit_mode else "required" }}>
+        <input id="password" type="password" class="form-control"
+               {{ "" if edit_mode else "required" }}>
         {% if edit_mode %}
-        <small class="text-muted">Leer lassen, um das Passwort beizubehalten</small>
+        <small class="text-muted">Feld leer lassen, um&nbsp;das Passwort zu behalten.</small>
         {% endif %}
     </div>
 
-    <div class="form-check mb-3">
+    <div class="form-check mb-4">
         <input id="super" class="form-check-input" type="checkbox">
         <label class="form-check-label">Superuser</label>
     </div>
@@ -34,6 +47,8 @@
 {% endblock %}
 
 {% block script %}
+{{ super() }}{# erhält Bootstrap‑Bundle aus base.html #}
+
 <script>
 /* ---------- helpers ---------- */
 const API_URL = "{{ API_URL }}";
@@ -43,19 +58,18 @@ function authHeader() {
   return c ? { Authorization: `Bearer ${c.split('=')[1]}` } : {};
 }
 
-const id        = new URLSearchParams(location.search).get('id');
-const usersEP   = `${API_URL}/users`;          // standard FastAPI-Users routes
-const listEP    = `${API_URL}/admin/users`;    // only for listing
-const registerEP= `${API_URL}/auth/register`;  // FastAPI-Users register
+const id         = new URLSearchParams(location.search).get('id');
+const usersEP    = `${API_URL}/users`;
+const registerEP = `${API_URL}/auth/register`;
 
-/* ---------- edit mode: pre-fill ---------- */
+/* ---------- edit mode ---------- */
 if (id) {
   fetch(`${usersEP}/${id}`, { headers: authHeader() })
     .then(r => r.json())
     .then(u => { $('#email').value = u.email; $('#super').checked = u.is_superuser; });
 }
 
-/* ---------- submit handler ---------- */
+/* ---------- submit ---------- */
 $('#user-form').addEventListener('submit', ev => {
   ev.preventDefault();
   $('#spinner').classList.remove('d-none');
@@ -68,48 +82,43 @@ $('#user-form').addEventListener('submit', ev => {
 
   const createBody = {
     email, password: pwd || "ChangeMe123!",
-    is_active: true, is_verified: true, is_superuser: isSuper
+    is_active:true, is_verified:true, is_superuser:isSuper
   };
-
-  const updateBody = {
-    email, is_superuser: isSuper,
-    ...(pwd && { password: pwd })
-  };
+  const updateBody = { email, is_superuser:isSuper, ...(pwd && { password:pwd }) };
 
   const req = id
     ? fetch(`${usersEP}/${id}`, {
-        method : 'PATCH',
-        headers: { ...authHeader(), 'Content-Type':'application/json' },
-        body   : JSON.stringify(updateBody)
+        method:'PATCH',
+        headers:{ ...authHeader(), 'Content-Type':'application/json' },
+        body:JSON.stringify(updateBody)
       })
     : fetch(registerEP, {
-        method : 'POST',
-        headers: { ...authHeader(), 'Content-Type':'application/json' },
-        body   : JSON.stringify(createBody)
+        method:'POST',
+        headers:{ ...authHeader(), 'Content-Type':'application/json' },
+        body:JSON.stringify(createBody)
       });
 
-  req
-    .then(r => r.ok ? r.json() : r.text().then(t => Promise.reject({code:r.status,msg:t})))
-    /* In create-flow, FastAPI-Users ignores is_superuser.
-       Send a follow-up PATCH when super-flag set. */
-    .then(u => {
-      if (!id && isSuper) {
-        return fetch(`${usersEP}/${u.id}`, {
-          method : 'PATCH',
-          headers: { ...authHeader(), 'Content-Type':'application/json' },
-          body   : JSON.stringify({ is_superuser:true })
-        });
-      }
-    })
-    .then(() => location.href = "{{ url_for('users') }}")
-    .catch(err => {
-      $('#form-error').textContent = `Fehler ${err.code ?? ''} – ${err.msg ?? err}`;
-      $('#form-error').classList.remove('d-none');
-    })
-    .finally(() => {
-      $('#spinner').classList.add('d-none');
-      $('#save-btn').disabled = false;
-    });
+  req.then(r => r.ok ? r.json()
+                     : r.text().then(t => Promise.reject({code:r.status,msg:t})))
+     .then(u => {
+        if (!id && isSuper) {
+          return fetch(`${usersEP}/${u.id}`, {
+            method:'PATCH',
+            headers:{ ...authHeader(), 'Content-Type':'application/json' },
+            body:JSON.stringify({ is_superuser:true })
+          });
+        }
+     })
+     .then(() => location.href = "{{ url_for('users') }}")
+     .catch(err => {
+        $('#form-error').textContent =
+          `Fehler ${err.code ?? ''} – ${err.msg ?? err}`;
+        $('#form-error').classList.remove('d-none');
+     })
+     .finally(() => {
+        $('#spinner').classList.add('d-none');
+        $('#save-btn').disabled = false;
+     });
 });
 </script>
 {% endblock %}
