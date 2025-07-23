@@ -60,7 +60,7 @@
                         data-article-id="{{ art.article_id }}">
                     {% for choice in ['-','LEED','EUTax','DGNB'] %}
                     <option value="{{ choice }}"
-                            {% if art.certification= =choice %}selected{% endif %}>
+                            {% if art.certification==choice %}selected{% endif %}>
                         {{ choice }}
                     </option>
                     {% endfor %}
