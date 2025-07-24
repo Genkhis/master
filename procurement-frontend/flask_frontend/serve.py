@@ -1,18 +1,22 @@
-﻿# serve.py  – entry‑point for Render
+﻿# serve.py  – single entry‑point for Render
+
 from fastapi import FastAPI
 from fastapi.middleware.wsgi import WSGIMiddleware
 
-# import your existing apps
-from backend_fastapi import app as api_app          # <- FastAPI backend
-from flask_frontend.app import app as flask_app     # <- Flask frontend
+# ─── import the two apps ─────────────────────────────────────────────
+from backend_fastapi import app as api_app           # FastAPI backend
+from flask_frontend.app import app as flask_app      # Flask frontend
 
+# ─── umbrella FastAPI instance ───────────────────────────────────────
 root = FastAPI(
-    title="Procurement‑UI – combined",
-    docs_url=None, redoc_url=None, openapi_url=None     # docs stay under /api/docs
+    title="Procurement‑UI – combined stack",
+    docs_url="/api/docs",         # OpenAPI docs live under /api/…
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
 )
 
-# mount the API under /api  (keeps all current routes unchanged)
+# mount the FastAPI backend under /api  (all existing routes keep working)
 root.mount("/api", api_app)
 
-# make ALL other paths fall through to Flask
+# let every other path fall through to Flask
 root.mount("/", WSGIMiddleware(flask_app))
