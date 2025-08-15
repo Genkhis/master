@@ -20,7 +20,7 @@ if Path(".env").exists():
     from dotenv import load_dotenv
     load_dotenv(override=True)
 
-JWT_SECRET = os.getenv("JWT_SECRET", "change-me")   # always a str fallback
+JWT_SECRET = os.getenv("JWT_SECRET", "change-me")   #always strip
 import statistics
 from database import Base, engine, SessionLocal, get_db
 import os
@@ -43,7 +43,7 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 jwt_strategy = JWTStrategy(
-    secret=JWT_SECRET,          # ← use the same str for every component
+    secret=JWT_SECRET,          #dont forget
     lifetime_seconds=3600,
 )
 
@@ -63,7 +63,7 @@ fastapi_users = FastAPIUsers[User, UUID](
 app = FastAPI()
 @app.on_event("startup")
 def on_startup():
-    # create tables + seed roles & superuser
+    # create_tab
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
@@ -90,7 +90,6 @@ def on_startup():
     finally:
         db.close()
 
-# 4) Include the routers, now passing your schemas here
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
     prefix="/auth/jwt",
@@ -111,8 +110,8 @@ app.include_router(
 app.add_middleware(
     CORSMiddleware,
     allow_origins = [
-        "https://procurement-ui.onrender.com",   # production
-        "http://localhost:5000",                 # local dev (optional)
+        "https://procurement-ui.onrender.com",   
+        "http://localhost:5000",                 # loc dev
     ],
     allow_credentials = True,
     allow_methods     = ["*"],
@@ -130,7 +129,7 @@ def get_db():
 
 
 
-# Supplier models
+# Supplier
 class SupplierCreate(BaseModel):
     supplier_number: str
     name: str
@@ -158,7 +157,7 @@ def wake_db(db: Session = Depends(get_db)):
     db.execute(text("SELECT 1"))
     return {"status": "awake"}
 
-# Article models
+# Article
 class ArticleCreate(BaseModel):
     article_number: str
     article_name: str
@@ -170,7 +169,7 @@ class ArticleCreate(BaseModel):
     item_no_ext: str
     order_number: Optional[str] = None
     item_units: str
-    certification: Optional[str] = "-"           # "LEED", "BREEAM" or "-"
+    certification: Optional[str] = "-"           # "LEED",breem...
     unit_per_package: Optional[int] = None   
     quantity: float
     unit_of_measure: str
@@ -182,12 +181,12 @@ class ArticleCreate(BaseModel):
     costplace: Optional[str] = None  
 
 class ArticleUpdate(BaseModel):
-    article_number: Optional[int] = None
+    article_number: Optional[str] = None
     article_name: Optional[str] = None
     description: Optional[str] = None
     cost_type: Optional[str] = None
     category: Optional[str] = None
-    certification: Optional[str] = None          # keep None → unchanged
+    certification: Optional[str] = None
     dimension: Optional[str] = None
     item_no_ext: Optional[str] = None
     order_number: Optional[str] = None
@@ -198,12 +197,13 @@ class ArticleUpdate(BaseModel):
     price_per_unit_of_measure: Optional[float] = None
     amount: Optional[float] = None
     delivery: Optional[date] = None
-    supplier_number: Optional[int] = None
+    supplier_number: Optional[str] = None
+
 
 
 
 # -------------------------------
-# Schema Recreation (Development Only)
+# dev phase only
 # -------------------------------
 
 
@@ -219,7 +219,7 @@ def create_price_record(
         delivery: date | None,
         costplace: str | None):
 
-    # derive missing unit-price from sale-unit price
+
     if not unit_price_eur or unit_price_eur == 0:
         unit_price_eur = (
             sale_unit_price_eur / units_per_sale_unit
@@ -752,12 +752,12 @@ async def upload_articles(
     file: UploadFile = File(...),
     db:   Session    = Depends(get_db)
 ):
-    # 0) Datei lesen + Header normalisieren
+    # 0) read + normalise headers
     df = pd.read_excel(BytesIO(await file.read()), engine="openpyxl")
     df.columns = [c.strip().lower() for c in df.columns]
     df = df.fillna("")
 
-    # 1) Header‑Validierung
+    # 1) header validation
     missing = REQUIRED_COLUMNS - set(df.columns)
     if missing:
         raise HTTPException(
@@ -765,27 +765,35 @@ async def upload_articles(
             detail=f"Pflichtspalte(n) fehlen: {', '.join(sorted(missing))}"
         )
 
-    # 2) Typkonvertierungen
+    # 2) numeric + date conversions
     num_cols = [
         "units_per_sale_unit", "sale_unit_price_eur", "unit_price_eur",
         "quantity", "amount", "unit_per_package"
     ]
     for c in num_cols:
         df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
+
     df["delivery"] = pd.to_datetime(df["delivery"], errors="coerce")
+
+    # 3) 🔑 normalize key columns to TEXT so comparisons match DB types
+    #    (also strip trailing ".0" that Excel can inject)
+    df["article_number"]  = (
+        df["article_number"].astype(str).str.strip().str.replace(r"\.0+$", "", regex=True)
+    )
+    df["supplier_number"] = (
+        df["supplier_number"].astype(str).str.strip().str.replace(r"\.0+$", "", regex=True)
+    )
 
     inserted_ids: list[int]   = []
     missing_suppliers: set[str] = set()
 
-    # 3) Zeilen iterieren
+    # 4) iterate rows – use normalized string keys
     for _, row in df.iterrows():
-        art_no  = row["article_number"]
-        supp_no = str(row["supplier_number"]).strip() or None
+        art_no  = row["article_number"]              # already str
+        supp_no = row["supplier_number"] or None     # already str (or "")
 
-        # unbekannter Lieferant → sammeln & überspringen
-        if supp_no and not db.query(Supplier)\
-                             .filter_by(supplier_number=supp_no)\
-                             .first():
+        # unknown supplier → collect & skip
+        if supp_no and not db.query(Supplier).filter_by(supplier_number=supp_no).first():
             missing_suppliers.add(supp_no)
             continue
 
@@ -793,7 +801,7 @@ async def upload_articles(
                  .filter_by(article_number=art_no, supplier_number=supp_no)
                  .first())
 
-        # ─────────── Anlage Stammsatz, falls nicht vorhanden ───────────
+        # create master if absent (❗ certification intentionally NOT touched)
         if not art:
             art = Article(
                 article_number       = art_no,
@@ -806,34 +814,30 @@ async def upload_articles(
                 item_no_ext          = row["item_no_ext"],
                 order_number         = row["order_number"],
                 sale_unit            = row["sale_unit"],
-                units_per_sale_unit  = row["units_per_sale_unit"],
+                units_per_sale_unit  = float(row["units_per_sale_unit"] or 0),
                 unit_per_package     = int(row["unit_per_package"] or 1),
-                certification        = "-",          # Zertifikat bleibt Standard
+                # certification is managed manually in the UI – do not set/update here
             )
-            db.add(art)
-            db.commit()
-            db.refresh(art)
+            db.add(art); db.commit(); db.refresh(art)
 
-        # ─────────── bestehender Artikel: Zertifikat unverändert ───────────
-        # keine Aktion – Zertifizierung wird ausschließlich manuell gepflegt
-
-        # Preiszeile anlegen / anhängen
+        # always add price row
         create_price_record(
-            db                 = db,
-            article_id         = art.article_id,
-            sale_unit          = row["sale_unit"],
-            units_per_sale_unit= float(row["units_per_sale_unit"] or 0),
-            sale_unit_price_eur= float(row["sale_unit_price_eur"] or 0),
-            unit_price_eur     = float(row["unit_price_eur"] or 0),
-            quantity           = float(row["quantity"] or 0),
-            order_number       = row["order_number"] or None,
-            delivery           = row["delivery"]   or None,
-            costplace          = (row["costplace"]
-                                  if str(row["costplace"]).strip() else None),
+            db                  = db,
+            article_id          = art.article_id,
+            sale_unit           = row["sale_unit"],
+            units_per_sale_unit = float(row["units_per_sale_unit"] or 0),
+            sale_unit_price_eur = float(row["sale_unit_price_eur"] or 0),
+            unit_price_eur      = float(row["unit_price_eur"] or 0),
+            quantity            = float(row["quantity"] or 0),
+            order_number        = (row["order_number"] or None),
+            delivery            = (row["delivery"] if pd.notna(row["delivery"]) else None),
+            costplace           = (row["costplace"].strip()
+                                   if isinstance(row["costplace"], str) and row["costplace"].strip()
+                                   else None),
         )
         inserted_ids.append(art.article_id)
 
-    # 4) Zusammenfassung
+    # 5) summary
     msg = f"processed {len(inserted_ids)} row(s)"
     if missing_suppliers:
         msg += f", skipped {len(missing_suppliers)} (unknown supplier)"
@@ -843,6 +847,7 @@ async def upload_articles(
         "article_ids"      : inserted_ids,
         "missing_suppliers": sorted(missing_suppliers),
     }
+
 
 
 
